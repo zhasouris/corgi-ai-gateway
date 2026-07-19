@@ -1,0 +1,21 @@
+# Secrets — never commit the real environment file
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+.npm/
+
+# Test / coverage
+coverage/
+.vitest/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,39 @@
+# Server configuration (non-secret). Secrets come from .env — see .env.example.
+# Validated at startup by src/config.ts (fails fast on misconfiguration).
+
+# Default routing strategy when the caller sends no X-Router-Strategy header.
+default_strategy: balanced
+
+auth:
+  # When false, the proxy accepts unauthenticated requests (local dev only).
+  # When true, clients must present a bearer token listed in ROUTER_API_KEYS.
+  enabled: true
+
+classifier:
+  # The pinned classifier model that produces subjective/predictive features
+  # (complexity, expected output, reasoning depth, task type, data sensitivity).
+  # Not hardcoded — configured here (ADR 0003 / 0004).
+  enabled: true
+  provider: openai
+  model: gpt-4.1-nano
+  timeout_seconds: 8
+  # Prompt text is truncated to this many characters before being sent to the
+  # classifier, to bound its cost/latency.
+  max_input_chars: 8000
+
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+  anthropic:
+    # v1 reaches Claude via Anthropic's OpenAI-compatible endpoint (ADR 0001).
+    base_url: https://api.anthropic.com/v1
+    api_key_env: ANTHROPIC_API_KEY
+
+telemetry:
+  service_name: llm-model-router
+  # Console span exporter — handy for local dev.
+  console_export: true
+  otlp:
+    enabled: false
+    endpoint: http://localhost:4318/v1/traces

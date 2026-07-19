@@ -1,0 +1,14 @@
+services:
+  router:
+    build: .
+    ports:
+      - "8000:8000"
+    # Secrets are read from .env at the repo root (gitignored). Compose passes
+    # them into the container explicitly — the container's working dir is /app,
+    # not the host root (ADR: keys live at repo root, wired through here).
+    env_file:
+      - .env
+    volumes:
+      # Mount config read-only so catalog/strategy/server edits don't need a rebuild.
+      - ./config:/app/config:ro
+    restart: unless-stopped

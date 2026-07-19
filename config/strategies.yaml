@@ -1,0 +1,45 @@
+# Strategy weight vectors. A strategy is a set of weights over the scoring rules
+# (ADR 0003). The weighted sum of each rule's per-model score decides the winner.
+# Weights need not sum to 1 — they are relative. Rule keys must match the
+# `name` of a registered feature rule (see src/core/extractors/).
+
+strategies:
+  balanced:
+    cost: 1.0
+    latency: 0.5
+    complexity: 1.0
+    reasoning_depth: 0.7
+    expected_output: 0.5
+    input_tokens: 0.5
+    task_type: 0.7
+    data_sensitivity: 0.3
+
+  cost:
+    cost: 3.0
+    input_tokens: 1.0
+    expected_output: 1.0
+    complexity: 0.3
+    reasoning_depth: 0.2
+    latency: 0.2
+    task_type: 0.3
+    data_sensitivity: 0.3
+
+  quality:
+    complexity: 3.0
+    reasoning_depth: 2.0
+    task_type: 1.5
+    cost: 0.1
+    latency: 0.1
+    expected_output: 0.3
+    input_tokens: 0.2
+    data_sensitivity: 0.3
+
+  latency:
+    latency: 3.0
+    cost: 0.5
+    complexity: 0.5
+    reasoning_depth: 0.3
+    expected_output: 0.3
+    input_tokens: 0.3
+    task_type: 0.3
+    data_sensitivity: 0.3
