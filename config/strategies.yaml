@@ -4,25 +4,32 @@
 # `name` of a registered feature rule (see src/core/extractors/).
 
 strategies:
+  # Quality-family (complexity/reasoning/task_type) is weighted to outvote the
+  # cheap-family on hard prompts, while cost still dominates on easy ones. The
+  # cost proxies (input_tokens/expected_output score by per-1k price) are kept
+  # low so cost isn't triple-counted. See strategies note above.
   balanced:
+    complexity: 2.0
+    reasoning_depth: 1.0
+    task_type: 1.0
     cost: 1.0
     latency: 0.5
-    complexity: 1.0
-    reasoning_depth: 0.7
-    expected_output: 0.5
-    input_tokens: 0.5
-    task_type: 0.7
+    expected_output: 0.3
+    input_tokens: 0.3
     data_sensitivity: 0.3
 
+  # A pure cost strategy ignores quality signals entirely — otherwise, under
+  # per-rule normalization, even weight-0.3 quality rules tip hard prompts to
+  # expensive models and cost collapses onto balanced.
   cost:
     cost: 3.0
     input_tokens: 1.0
     expected_output: 1.0
-    complexity: 0.3
-    reasoning_depth: 0.2
-    latency: 0.2
-    task_type: 0.3
-    data_sensitivity: 0.3
+    latency: 0.5
+    complexity: 0.0
+    reasoning_depth: 0.0
+    task_type: 0.0
+    data_sensitivity: 0.0
 
   quality:
     complexity: 3.0
