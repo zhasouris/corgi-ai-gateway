@@ -9,4 +9,4 @@ graduates into an ADR (and this note can link to it).
 
 | Note | Status |
 |---|---|
-| [learned-routing-and-cascade.md](learned-routing-and-cascade.md) | 🟡 Open / unresolved |
+| [learned-routing-and-cascade.md](learned-routing-and-cascade.md) | ✅ Graduated → [ADR 0006](../decisions/0006-leveraging-learned-routing.md) |

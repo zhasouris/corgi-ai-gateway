@@ -1,11 +1,15 @@
 # Discussion — Learned Routing (RouteLLM/LLMRouter) & a Cascade Router
 
-- **Status:** 🟡 Open / unresolved — **no decision made**
+- **Status:** ✅ Graduated → [ADR 0006](../decisions/0006-leveraging-learned-routing.md) (2026-07-20)
 - **Date:** 2026-07-19
 - **Context repo:** `llm-model-router`
 
-> This is a discussion capture, not an ADR. It records where our thinking is, the options
-> on the table, and the open questions. Nothing here is committed to.
+> This discussion resolved into **[ADR 0006 — Leveraging Learned Routing](../decisions/0006-leveraging-learned-routing.md)**:
+> use RouteLLM as a learned **signal provider** behind a versioned `SignalProvider`
+> contract (co-located Python sidecar), feed its difficulty signal into our N-model scorer,
+> **shadow-eval before promotion**, and build the [eval harness](../eval-harness.md) first.
+> Two sub-questions (cascade escalation target; fast-path signal completeness) remain
+> deferred in the ADR. The original exploration is preserved below.
 
 ## What prompted it
 
