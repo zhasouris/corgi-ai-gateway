@@ -1,0 +1,30 @@
+{"id":"easy-greet","request":{"messages":[{"role":"user","content":"Say hi and introduce yourself in one sentence."}]},"tags":["conversation"],"expectedTier":2}
+{"id":"easy-rephrase","request":{"messages":[{"role":"user","content":"Rephrase this politely: send me the report now."}]},"tags":["easy"],"expectedTier":2}
+{"id":"easy-translate","request":{"messages":[{"role":"user","content":"Translate hello how are you into Spanish."}]},"tags":["translation"],"expectedTier":2}
+{"id":"easy-capital","request":{"messages":[{"role":"user","content":"What is the capital of France?"}]},"tags":["easy"],"expectedTier":2}
+{"id":"easy-list","request":{"messages":[{"role":"user","content":"List three common fruits."}]},"tags":["easy"],"expectedTier":2}
+{"id":"easy-spelling","request":{"messages":[{"role":"user","content":"Fix the spelling: recieve, seperate, definately."}]},"tags":["easy"],"expectedTier":2}
+{"id":"easy-classify","request":{"messages":[{"role":"user","content":"Classify this sentiment as positive or negative: I love this product."}]},"tags":["extraction"],"expectedTier":2}
+{"id":"easy-yesno","request":{"messages":[{"role":"user","content":"Yes or no: is water wet?"}]},"tags":["easy"],"expectedTier":2}
+{"id":"med-summarize","request":{"messages":[{"role":"user","content":"Summarize the following paragraph about photosynthesis into two sentences for a student audience."}]},"tags":["summarization"],"expectedTier":3}
+{"id":"med-explain","request":{"messages":[{"role":"user","content":"Explain how a hash map works to a junior developer."}]},"tags":["reasoning"],"expectedTier":3}
+{"id":"med-simple-code","request":{"messages":[{"role":"user","content":"Write a Python function that reverses a string."}]},"tags":["coding"],"expectedTier":3}
+{"id":"med-regex","request":{"messages":[{"role":"user","content":"Write a regex to match a US phone number and explain it briefly."}]},"tags":["coding"],"expectedTier":3}
+{"id":"med-format","request":{"messages":[{"role":"user","content":"Format this list of names into a markdown table with columns name and role."}]},"tags":["extraction"],"expectedTier":3}
+{"id":"med-email","request":{"messages":[{"role":"user","content":"Draft a short professional email declining a meeting invitation."}]},"tags":["creative"],"expectedTier":3}
+{"id":"med-sql","request":{"messages":[{"role":"user","content":"Write a SQL query to get the top 5 customers by total order value."}]},"tags":["coding"],"expectedTier":3}
+{"id":"hard-race","request":{"messages":[{"role":"user","content":"Debug this concurrency bug: two goroutines share a counter without a mutex and produce a race condition. Explain the fix step by step."}]},"tags":["coding"],"expectedTier":5}
+{"id":"hard-distributed","request":{"messages":[{"role":"user","content":"Design a distributed rate limiter for a multi-region API. Discuss trade-offs between token bucket and sliding window, consistency, and failure modes."}]},"tags":["analysis"],"expectedTier":5}
+{"id":"hard-proof","request":{"messages":[{"role":"user","content":"Prove that the square root of 2 is irrational using proof by contradiction."}]},"tags":["math"],"expectedTier":5}
+{"id":"hard-optimize","request":{"messages":[{"role":"user","content":"Optimize this O(n^2) algorithm to O(n log n) and derive the new complexity, explaining each step."}]},"tags":["coding"],"expectedTier":5}
+{"id":"hard-architect","request":{"messages":[{"role":"user","content":"Refactor a monolith into microservices: propose service boundaries, data ownership, and a migration strategy with trade-offs."}]},"tags":["analysis"],"expectedTier":5}
+{"id":"hard-calculus","request":{"messages":[{"role":"user","content":"Solve for the integral of x^2 times e^x dx and show the derivation."}]},"tags":["math"],"expectedTier":5}
+{"id":"hard-probability","request":{"messages":[{"role":"user","content":"Derive the probability that at least two people in a room of 23 share a birthday and explain the reasoning."}]},"tags":["math"],"expectedTier":5}
+{"id":"hard-analysis","request":{"messages":[{"role":"user","content":"Analyze the trade-offs between eventual and strong consistency in a distributed database, with concrete failure scenarios."}]},"tags":["analysis"],"expectedTier":5}
+{"id":"med-creative-poem","request":{"messages":[{"role":"user","content":"Write a haiku about autumn leaves."}]},"tags":["creative"],"expectedTier":3}
+{"id":"med-explain-why","request":{"messages":[{"role":"user","content":"Explain why the sky is blue in simple terms."}]},"tags":["reasoning"],"expectedTier":3}
+{"id":"hard-debug-stack","request":{"messages":[{"role":"user","content":"Given this stack trace and code, diagnose the null pointer exception, explain the root cause, and propose a robust fix."}]},"tags":["coding"],"expectedTier":5}
+{"id":"med-extract","request":{"messages":[{"role":"user","content":"Extract all email addresses from the following block of text and return them as a list."}]},"tags":["extraction"],"expectedTier":3}
+{"id":"easy-onewors","request":{"messages":[{"role":"user","content":"In one word, what color is the sky on a clear day?"}]},"tags":["easy"],"expectedTier":2}
+{"id":"hard-theorem","request":{"messages":[{"role":"user","content":"State and prove the pigeonhole principle, then apply it to a non-trivial combinatorics example."}]},"tags":["math"],"expectedTier":5}
+{"id":"med-guide","request":{"messages":[{"role":"user","content":"Write a short beginner guide to setting up a Python virtual environment."}]},"tags":["coding"],"expectedTier":3}

@@ -2,6 +2,9 @@
  * Routing orchestrator — the pipeline from ADR 0003.
  *
  *   detect -> (bypass?) -> analyze -> filter -> score -> decision
+ *
+ * `decide()` returns the decision plus the analysis trace (used by the eval
+ * harness for costing); `route()` is the thin wrapper the API uses.
  */
 
 import { trace } from "@opentelemetry/api";
@@ -12,54 +15,62 @@ import type {
   RoutingDecision,
   RoutingRequest,
 } from "../types.js";
-import { analyze as defaultAnalyze } from "./analysis.js";
+import { makeAnalyze, type AnalyzeFn } from "./analysis.js";
 import { ALL_CONSTRAINTS } from "./constraints.js";
 import { detectRequirements } from "./detect.js";
 import { ALL_RULES } from "./extractors/rules.js";
 import { filterCandidates, scoreModels, topReason } from "./scoring.js";
+import { LlmClassifierProvider } from "./signal.js";
 
 const tracer = trace.getTracer("router.core");
 
 export class NoEligibleModelError extends Error {}
 
-type AnalyzeFn = (req: RoutingRequest, config: AppConfig) => Promise<RequestAnalysis>;
+/** Decision plus the analysis that produced it (analysis absent when bypassed). */
+export interface RouteTrace {
+  decision: RoutingDecision;
+  analysis?: RequestAnalysis;
+}
 
 export class Router {
   private readonly catalog: ModelDescriptor[];
   private readonly byId: Map<string, ModelDescriptor>;
+  private readonly analyzeFn: AnalyzeFn;
 
   constructor(
     private readonly config: AppConfig,
-    private readonly analyzeFn: AnalyzeFn = defaultAnalyze,
+    analyzeFn?: AnalyzeFn,
   ) {
     this.catalog = config.catalog;
     this.byId = new Map(this.catalog.map((m) => [m.id, m]));
+    this.analyzeFn = analyzeFn ?? makeAnalyze(new LlmClassifierProvider(config));
   }
 
   private providerFor(modelId: string): string {
     const model = this.byId.get(modelId);
     if (model) return model.provider;
-    // Unknown model (bypass to something outside the catalog): guess by prefix.
     return modelId.startsWith("claude") ? "anthropic" : "openai";
   }
 
-  async route(req: RoutingRequest): Promise<RoutingDecision> {
+  async decide(req: RoutingRequest): Promise<RouteTrace> {
     Object.assign(req, detectRequirements(req.body));
 
     if (req.options.bypass) {
       const modelId = req.body.model ?? "";
       return {
-        modelId,
-        provider: this.providerFor(modelId),
-        reason: "bypass",
-        strategy: req.options.strategy,
-        bypassed: true,
-        ranked: [],
-        warnings: req.options.warnings,
+        decision: {
+          modelId,
+          provider: this.providerFor(modelId),
+          reason: "bypass",
+          strategy: req.options.strategy,
+          bypassed: true,
+          ranked: [],
+          warnings: req.options.warnings,
+        },
       };
     }
 
-    const analysis = await this.analyzeFn(req, this.config);
+    const analysis = await this.analyzeFn(req);
 
     return tracer.startActiveSpan("router.score", (span) => {
       let candidates = filterCandidates(this.catalog, ALL_CONSTRAINTS, req, analysis);
@@ -93,14 +104,21 @@ export class Router {
       span.end();
 
       return {
-        modelId: top.model.id,
-        provider: top.model.provider,
-        reason: topReason(top, req.options.strategy),
-        strategy: req.options.strategy,
-        bypassed: false,
-        ranked,
-        warnings,
+        decision: {
+          modelId: top.model.id,
+          provider: top.model.provider,
+          reason: topReason(top, req.options.strategy),
+          strategy: req.options.strategy,
+          bypassed: false,
+          ranked,
+          warnings,
+        },
+        analysis,
       };
     });
+  }
+
+  async route(req: RoutingRequest): Promise<RoutingDecision> {
+    return (await this.decide(req)).decision;
   }
 }
