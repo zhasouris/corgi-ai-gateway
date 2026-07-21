@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Node dependencies (proxy)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Python dependencies (RouteLLM sidecar)
+  - package-ecosystem: pip
+    directory: /sidecar
+    schedule:
+      interval: weekly
+
+  # Base images
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /sidecar
+    schedule:
+      interval: weekly
+
+  # Pin/refresh GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

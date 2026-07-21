@@ -1,0 +1,31 @@
+rules:
+  # This proxy handles provider API keys and forwards user request bodies. Keep
+  # both out of logs and telemetry (ADR 0008). These are conservative, exact-
+  # name matches to avoid flagging benign identifiers like `inputTokens`.
+  - id: no-secret-in-log
+    message: >
+      Possible secret in a log statement. Never log API keys, tokens, or full
+      request bodies — redact or whitelist safe fields.
+    severity: WARNING
+    languages: [typescript, javascript]
+    patterns:
+      - pattern-either:
+          - pattern: console.log(..., $X, ...)
+          - pattern: console.warn(..., $X, ...)
+          - pattern: console.error(..., $X, ...)
+          - pattern: console.info(..., $X, ...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: ^(?i)(api[_]?key|secret[_]?key|secret|password|authorization|bearer[_]?token)$
+
+  - id: no-secret-in-span-attribute
+    message: >
+      Do not put secrets on OpenTelemetry span attributes; only whitelist safe,
+      non-sensitive fields.
+    severity: WARNING
+    languages: [typescript, javascript]
+    patterns:
+      - pattern: $SPAN.setAttribute($K, $V)
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^(?i)(api[_]?key|secret[_]?key|secret|password|authorization|bearer[_]?token)$
