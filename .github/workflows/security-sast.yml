@@ -27,11 +27,11 @@ jobs:
         language: [javascript-typescript, python]
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -54,7 +54,7 @@ jobs:
             --config p/owasp-top-ten \
             --config .semgrep/rules.yml \
             --sarif --output semgrep.sarif || true
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -83,7 +83,7 @@ jobs:
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH,MEDIUM
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy.sarif
@@ -99,7 +99,7 @@ jobs:
           python-version: "3.12"
       - run: pip install "bandit[sarif]"
       - run: bandit -r sidecar -f sarif -o bandit.sarif || true
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: bandit.sarif
@@ -122,12 +122,12 @@ jobs:
           format: sarif
           output-file: hadolint-sidecar.sarif
           no-fail: true
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: hadolint-main.sarif
           category: hadolint-main
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: hadolint-sidecar.sarif
