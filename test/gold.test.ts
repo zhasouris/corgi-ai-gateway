@@ -5,8 +5,13 @@
  */
 
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { getConfig } from "../src/config.js";
+
+// Use the fixed gold catalog so provability holds as the real catalog grows.
+process.env.ROUTER_CONFIG_DIR = join(process.cwd(), "test", "fixtures", "gold");
+
+import { getConfig, resetConfigCache } from "../src/config.js";
 import { makeAnalyze } from "../src/core/analysis.js";
 import { NoEligibleModelError, Router } from "../src/core/router.js";
 import { HeuristicSignalProvider } from "../src/core/signal.js";
@@ -33,6 +38,7 @@ const gold: GoldCase[] = readFileSync("eval/datasets/gold.jsonl", "utf-8")
   .filter(Boolean)
   .map((l) => JSON.parse(l) as GoldCase);
 
+resetConfigCache();
 const config = getConfig();
 const byId = new Map(config.catalog.map((m) => [m.id, m]));
 const router = new Router(config, makeAnalyze(new HeuristicSignalProvider()));

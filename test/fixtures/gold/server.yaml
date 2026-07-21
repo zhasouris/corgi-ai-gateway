@@ -1,0 +1,22 @@
+default_strategy: balanced
+auth:
+  enabled: false
+classifier:
+  enabled: false
+  provider: openai
+  model: gpt-4.1-nano
+demo:
+  enabled: false
+routellm:
+  enabled: false
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+  anthropic:
+    base_url: https://api.anthropic.com/v1
+    api_key_env: ANTHROPIC_API_KEY
+telemetry:
+  console_export: false
+  otlp:
+    enabled: false
