@@ -10,6 +10,7 @@
 
 import { trace } from "@opentelemetry/api";
 import type { AppConfig } from "../config.js";
+import { recordUpstream } from "../metrics.js";
 
 const tracer = trace.getTracer("router.forwarder");
 
@@ -84,11 +85,13 @@ export class Forwarder implements ForwarderLike {
       span.setAttribute("router.stream", stream);
       span.setAttribute("http.url", url);
 
+      const started = Date.now();
       const resp = await fetch(url, {
         method: "POST",
         headers: this.headers(provider, incomingHeaders, model),
         body: JSON.stringify(body),
       });
+      recordUpstream({ provider, status: resp.status, durationMs: Date.now() - started });
 
       const headers: Record<string, string> = {};
       resp.headers.forEach((v, k) => (headers[k] = v));

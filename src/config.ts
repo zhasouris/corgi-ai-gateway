@@ -45,6 +45,12 @@ const serverSchema = z.object({
           endpoint: z.string().default("http://localhost:4318/v1/traces"),
         })
         .default({}),
+      // App Insights / Azure Monitor. Connection string from
+      // APPLICATIONINSIGHTS_CONNECTION_STRING (secret, in .env).
+      azure_monitor: z.object({ enabled: z.boolean().default(false) }).default({}),
+      // Which OTel signals to emit (each exports to whatever backends are on).
+      metrics: z.object({ enabled: z.boolean().default(true) }).default({}),
+      logs: z.object({ enabled: z.boolean().default(true) }).default({}),
     })
     .default({}),
 });

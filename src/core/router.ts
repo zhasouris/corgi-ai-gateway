@@ -9,6 +9,7 @@
 
 import { trace } from "@opentelemetry/api";
 import type { AppConfig } from "../config.js";
+import { recordDecision } from "../metrics.js";
 import type {
   ModelDescriptor,
   RequestAnalysis,
@@ -53,14 +54,24 @@ export class Router {
   }
 
   async decide(req: RoutingRequest): Promise<RouteTrace> {
+    const started = Date.now();
     Object.assign(req, detectRequirements(req.body));
 
     if (req.options.bypass) {
       const modelId = req.body.model ?? "";
+      const provider = this.providerFor(modelId);
+      recordDecision({
+        strategy: req.options.strategy,
+        model: modelId,
+        provider,
+        bypassed: true,
+        degraded: false,
+        durationMs: Date.now() - started,
+      });
       return {
         decision: {
           modelId,
-          provider: this.providerFor(modelId),
+          provider,
           reason: "bypass",
           strategy: req.options.strategy,
           bypassed: true,
@@ -102,6 +113,19 @@ export class Router {
       span.setAttribute("router.strategy", req.options.strategy);
       span.setAttribute("router.candidates", candidates.length);
       span.end();
+
+      const estimatedCost =
+        (analysis.inputTokens / 1000) * top.model.costPer1kInput +
+        (analysis.classifier.expectedOutputTokens / 1000) * top.model.costPer1kOutput;
+      recordDecision({
+        strategy: req.options.strategy,
+        model: top.model.id,
+        provider: top.model.provider,
+        bypassed: false,
+        degraded: analysis.classifier.degraded,
+        durationMs: Date.now() - started,
+        estimatedCost,
+      });
 
       return {
         decision: {

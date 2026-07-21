@@ -32,8 +32,17 @@ providers:
 
 telemetry:
   service_name: llm-model-router
-  # Console span exporter — handy for local dev.
+  # Console exporter — handy for local dev (traces, metrics, logs).
   console_export: true
   otlp:
     enabled: false
     endpoint: http://localhost:4318/v1/traces
+  # Azure Monitor / Application Insights. Connection string comes from
+  # APPLICATIONINSIGHTS_CONNECTION_STRING in .env (see docs/help/observability.md).
+  azure_monitor:
+    enabled: false
+  # Which signals to emit; each goes to whatever backends are enabled above.
+  metrics:
+    enabled: true
+  logs:
+    enabled: true

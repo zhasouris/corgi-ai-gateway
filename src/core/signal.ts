@@ -18,6 +18,7 @@ import {
   type RoutingRequest,
 } from "../types.js";
 import { clamp01 } from "./extractors/types.js";
+import { logWarn } from "../logger.js";
 
 export interface SignalProvider {
   readonly name: string;
@@ -90,7 +91,11 @@ export class LlmClassifierProvider implements SignalProvider {
       });
       return parseClassifier(resp.choices[0]?.message?.content ?? "{}");
     } catch (err) {
-      console.warn("classifier failed, degrading to defaults:", (err as Error).message);
+      logWarn("classifier failed, degrading to defaults", {
+        provider: cfg.provider,
+        model: cfg.model,
+        error: (err as Error).message,
+      });
       return defaultClassifierResult(true);
     }
   }
@@ -204,7 +209,9 @@ export class RouteLLMProvider implements SignalProvider {
         reasoningDepth: clamp01(winRate * 0.8),
       };
     } catch (err) {
-      console.warn("routellm sidecar unavailable, using heuristic:", (err as Error).message);
+      logWarn("routellm sidecar unavailable, using heuristic", {
+        error: (err as Error).message,
+      });
       return { ...base, degraded: true };
     } finally {
       clearTimeout(timer);
