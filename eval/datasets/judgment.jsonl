@@ -1,0 +1,12 @@
+{"id":"triv-arith","request":{"messages":[{"role":"user","content":"What is 2 + 2?"}]}}
+{"id":"triv-capital","request":{"messages":[{"role":"user","content":"What is the capital of Japan?"}]}}
+{"id":"triv-greet","request":{"messages":[{"role":"user","content":"Say a friendly hello in one sentence."}]}}
+{"id":"triv-translate","request":{"messages":[{"role":"user","content":"Translate 'good morning' into French."}]}}
+{"id":"easy-explain","request":{"messages":[{"role":"user","content":"Explain what a variable is in programming, in two sentences."}]}}
+{"id":"med-palindrome","request":{"messages":[{"role":"user","content":"Write a Python function that returns True if a string is a palindrome."}]}}
+{"id":"med-summary","request":{"messages":[{"role":"user","content":"Summarize how the water cycle works in about three sentences."}]}}
+{"id":"hard-proof","request":{"messages":[{"role":"user","content":"Prove that the square root of 2 is irrational using proof by contradiction, showing each step rigorously."}]}}
+{"id":"hard-distributed","request":{"messages":[{"role":"user","content":"Design a distributed rate limiter for a multi-region API. Analyze token bucket vs sliding window, the consistency trade-offs, and failure modes."}]}}
+{"id":"hard-race","request":{"messages":[{"role":"user","content":"Two threads increment a shared counter without synchronization, causing a race condition. Explain precisely why, and give a correct, well-justified fix."}]}}
+{"id":"hard-optimize","request":{"messages":[{"role":"user","content":"Given an O(n^2) algorithm that finds duplicate pairs, redesign it to O(n) or O(n log n), prove the new complexity, and discuss trade-offs."}]}}
+{"id":"hard-birthday","request":{"messages":[{"role":"user","content":"Derive, step by step, the probability that at least two people in a group of 23 share a birthday, and explain the counting."}]}}
