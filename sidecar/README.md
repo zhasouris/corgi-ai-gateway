@@ -30,6 +30,28 @@ GET  /healthz          -> { status, router }
 POST /score { prompt } -> { winRate, confidence, router }
 ```
 
+## Show RouteLLM's score in the /demo page
+
+The decision inspector (`/demo`) shows RouteLLM's win-rate alongside the classifier
+signal when the sidecar is running and RouteLLM is enabled:
+
+```bash
+# start the sidecar + router together
+docker compose --profile routellm up --build
+```
+
+Then enable RouteLLM on the router, either in `config/server.yaml`:
+
+```yaml
+routellm:
+  enabled: true
+  url: http://routellm-sidecar:8001
+```
+
+…or at runtime with `ROUTELLM_ENABLED=true` (and `ROUTELLM_URL` if the sidecar is
+elsewhere). The demo's "RouteLLM (learned signal)" card then shows the win-rate and
+confidence; if the sidecar is unreachable it shows "unavailable" (the router keeps working).
+
 ## Use with the eval harness
 
 ```bash

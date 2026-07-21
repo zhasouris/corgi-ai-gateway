@@ -8,7 +8,23 @@ services:
     # not the host root (ADR: keys live at repo root, wired through here).
     env_file:
       - .env
+    environment:
+      # Where the RouteLLM sidecar lives (used only when RouteLLM is enabled).
+      ROUTELLM_URL: http://routellm-sidecar:8001
     volumes:
       # Mount config read-only so catalog/strategy/server edits don't need a rebuild.
       - ./config:/app/config:ro
+    restart: unless-stopped
+
+  # RouteLLM signal sidecar (ADR 0006). Heavy (pulls PyTorch + model weights), so
+  # it's opt-in via a profile. To show RouteLLM's win-rate in the demo:
+  #   docker compose --profile routellm up --build
+  #   then set ROUTELLM_ENABLED=true on the router (or routellm.enabled in server.yaml)
+  routellm-sidecar:
+    build: ./sidecar
+    profiles: ["routellm"]
+    env_file:
+      - .env # OPENAI_API_KEY — the mf router embeds prompts via OpenAI
+    expose:
+      - "8001"
     restart: unless-stopped

@@ -93,14 +93,16 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
       const result = await router.explain(req);
 
       // Shadow RouteLLM signal (best-effort; shown alongside the classifier).
+      // Enable via server.yaml or the ROUTELLM_ENABLED env override.
       const rl = config.server.routellm;
+      const rlEnabled = rl.enabled || process.env.ROUTELLM_ENABLED === "true";
       let routellm: {
         enabled: boolean;
         available: boolean;
         winRate?: number;
         confidence?: number;
-      } = { enabled: rl.enabled, available: false };
-      if (rl.enabled) {
+      } = { enabled: rlEnabled, available: false };
+      if (rlEnabled) {
         const url = process.env.ROUTELLM_URL ?? rl.url;
         const score = await fetchRouteLLMScore(url, promptText(req, 8000));
         if (score) {
