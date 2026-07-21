@@ -61,6 +61,12 @@ traffic runs **offline** and feeds results back in as data — so a trained rout
   not a deploy.
 - **A place to put a learned router.** Already collecting telemetry? The offline module is
   designed to consume it and improve routing over time.
+- **Per-model cost breakdown.** Give each model its own vendor API key (`api_key_env` in
+  the catalog) and the vendor's own billing dashboard attributes spend per model — no
+  custom metering (see [ADR 0007](docs/decisions/0007-per-model-api-keys.md)).
+- **It measures its own routing.** A built-in eval harness scores routing quality against
+  provable gold cases *and* quality-judged ground truth — so "is it any good?" is a number,
+  not a hope (see [below](#measuring-the-routing)).
 
 Not the right tool if you just want a passive multi-provider gateway with failover — a
 mature gateway like LiteLLM already does that well, and can even sit *underneath* this as
@@ -75,9 +81,11 @@ request ─▶ detect ─▶ (bypass?) ─▶ analyze ─▶ filter (hard constr
 ```
 
 1. **Detect** deterministic facts (token count, vision/tools/audio, JSON mode).
-2. **Analyze** — one cheap classifier call estimates the subjective signals (complexity,
-   expected output size, reasoning depth, task type, data sensitivity). It degrades
-   gracefully: if the classifier fails, routing still happens on deterministic signals.
+2. **Analyze** — a pluggable **signal provider** estimates the subjective signals
+   (complexity, expected output size, reasoning depth, task type, data sensitivity). Ships
+   with a deterministic heuristic and a cheap-LLM classifier; a **RouteLLM sidecar** (a
+   trained difficulty model) drops in behind the same `SignalProvider` interface. Degrades
+   gracefully — if the signal source fails, routing continues on deterministic signals.
 3. **Filter** the model catalog by hard capability constraints (a vision request never
    routes to a non-vision model, ever).
 4. **Score** every surviving model with strategy-weighted, normalized rules and pick the
@@ -105,27 +113,59 @@ The design rationale for every one of these choices lives in
 
 ---
 
+## Measuring the routing
+
+A router is only as good as its decisions, so the project ships an **evaluation harness**
+that turns "is it any good?" into numbers — two ways, each honest about what it proves:
+
+- **Provable gold cases** (`test/gold.test.ts`) — requests whose correct target is
+  *objectively determinable* (a vision request must go to a vision model; a pure-`cost`
+  request must go to the cheapest; bypass must be verbatim; an audio request must error).
+  **Current: 11/11.**
+- **Quality-judged accuracy** (`npm run eval:judge`) — for each prompt it calls a weak and
+  a strong model, an LLM judge decides whether the strong answer was *meaningfully* better,
+  and the router's choice is scored against that ground truth. **Current (balanced): 83%
+  accuracy, 0% over-routing, 17% under-routing** on a 12-prompt set.
+
+```bash
+npm run eval          # dry-run: strategies vs. baselines + estimated cost (hermetic)
+npm run eval:judge    # quality-judged accuracy (makes real model calls; spends)
+```
+
+Honest caveats: the judged number is a small set with a single judge model, and the
+default signal is a coarse heuristic — closing the gap is exactly what the RouteLLM signal
+is for. The harness is the feedback loop that will *prove* whether it helps. Spec:
+[`docs/eval-harness.md`](docs/eval-harness.md).
+
+---
+
 ## Implementations
 
-This branch is the **TypeScript** runtime (Hono + `tsx`). A **Python** runtime
-(FastAPI) with identical behavior lives on the `feature/python-implementation` branch.
-The ADRs 0001–0003 and 0005 are shared by both; ADR 0004 documents each stack.
+The primary runtime is **TypeScript** (this repo, `main`). A **Python** runtime (FastAPI)
+with equivalent behavior lives on the `feature/python-implementation` branch. ADRs
+0001–0003 and 0005–0007 are shared by both; ADR 0004 documents each stack.
 
 ## Stack (TypeScript)
 
 Hono (+ `@hono/node-server`), Zod for config validation, the `openai` SDK for the
 classifier call, global `fetch` for streaming passthrough, `gpt-tokenizer` for token
-counting, OpenTelemetry, run via `tsx`. See
+counting, OpenTelemetry, run via `tsx`. The signal source is a pluggable `SignalProvider`
+(heuristic / LLM classifier / RouteLLM sidecar). See
 [ADR 0004](docs/decisions/0004-stack-and-project-layout.md).
 
 ## Configuration
 
 | File | Holds |
 |---|---|
-| `.env` | Secrets — provider keys + proxy bearer tokens (gitignored; copy from `.env.example`) |
+| `.env` | Secrets — provider keys, optional per-model keys, proxy bearer tokens (gitignored; copy from `.env.example`) |
 | `config/server.yaml` | Classifier, OTel, auth, provider endpoints |
-| `config/models.yaml` | Model catalog (cost, context, capabilities, tier) |
+| `config/models.yaml` | Model catalog (cost, context, capabilities, tier, optional `api_key_env`) |
 | `config/strategies.yaml` | Strategy → weight vectors |
+| `sidecar/` | Optional RouteLLM signal sidecar (Python) — see its README |
+
+**Per-model keys** (optional): a model in `models.yaml` may set `api_key_env` to
+authenticate its own calls with a dedicated vendor key; otherwise it falls back to the
+provider default. This is how per-model cost breakdown works.
 
 ## Run
 
@@ -162,8 +202,10 @@ curl http://localhost:8000/v1/chat/completions \
 ## Tests
 
 ```bash
-npm test          # vitest
+npm test          # vitest — 51 tests incl. gold routing + judging logic (hermetic)
 npm run typecheck # tsc --noEmit
+npm run eval      # dry-run routing eval (strategies vs. baselines)
+npm run eval:judge# quality-judged accuracy (spends — real model calls)
 ```
 
 Testing rules and invariants are in [`docs/TESTING.md`](docs/TESTING.md).
@@ -172,15 +214,18 @@ Testing rules and invariants are in [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Status & roadmap
 
-**v1 (now):** OpenAI-compatible surface; OpenAI native + Claude via Anthropic's
-OpenAI-compat endpoint; classifier-backed scoring; header control; streaming; OTel; Docker.
+**Now:** OpenAI-compatible surface; OpenAI native + Claude via Anthropic's OpenAI-compat
+endpoint; pluggable signal (heuristic / LLM classifier / RouteLLM sidecar); strategy-
+weighted scoring; header control; streaming; per-model API keys; OpenTelemetry; Docker;
+evaluation harness (dry-run + provable gold + quality-judged accuracy).
 
-**Deferred (documented in the ADRs):**
+**In progress / deferred (documented in the ADRs):**
+- **RouteLLM shadow-eval → promotion** (ADR 0006): the sidecar + `SignalProvider` are
+  built; the accuracy lift vs. the heuristic is not yet benchmarked through the judge.
 - Canonical intermediate representation + native multi-provider translation (ADR 0001) —
   or routing provider translation through a mature gateway like LiteLLM instead.
 - Self-hosted / Ollama backends.
-- Offline, telemetry-fed ML router (ADR 0005) — where a trained RouteLLM-style decision
-  model would plug in.
+- Offline, telemetry-fed ML router (ADR 0005).
 - Automatic cross-provider failover.
 
 ## Related & prior art
