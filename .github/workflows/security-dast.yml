@@ -1,0 +1,85 @@
+name: security-dast
+
+# Dynamic analysis against the running proxy: OpenAPI fuzzing (Schemathesis),
+# an OWASP ZAP baseline scan, and auth-boundary assertions. Slower than SAST, so
+# it runs on a schedule + manual dispatch (not every PR). Uses dummy provider
+# keys — no real secrets, and upstream calls just 401 (fine for surface testing).
+
+on:
+  schedule:
+    - cron: "41 6 * * 2" # weekly, Tuesday 06:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dast:
+    name: DAST (Schemathesis + ZAP + auth boundary)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create CI env (dummy keys)
+        run: |
+          cat > .env <<'EOF'
+          OPENAI_API_KEY=sk-dummy-ci
+          ROUTER_API_KEYS=ci-test-key
+          EOF
+
+      - name: Start the proxy
+        run: docker compose up -d --build router
+
+      - name: Wait for health
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:8000/healthz >/dev/null; then echo "up"; exit 0; fi
+            sleep 2
+          done
+          echo "app did not become healthy"; docker compose logs router; exit 1
+
+      - name: Auth-boundary assertions
+        run: |
+          status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+          assert() { # $1=label $2=actual $3=expected
+            if [ "$2" != "$3" ]; then echo "FAIL $1 -> $2 (expected $3)"; exit 1; fi
+            echo "OK   $1 -> $2"
+          }
+          body='{"model":"auto","messages":[{"role":"user","content":"x"}]}'
+          # Guarded endpoints must reject unauthenticated requests.
+          assert "POST /v1/chat/completions (no key)" \
+            "$(status -X POST http://localhost:8000/v1/chat/completions -H 'content-type: application/json' -d "$body")" 401
+          assert "GET /v1/models (no key)" \
+            "$(status http://localhost:8000/v1/models)" 401
+          # The demo inspector is intentionally unauthenticated.
+          assert "POST /v1/router/explain (no key)" \
+            "$(status -X POST http://localhost:8000/v1/router/explain -H 'content-type: application/json' -d "$body")" 200
+
+      - name: Schemathesis (OpenAPI fuzzing)
+        run: |
+          pip install "schemathesis<4"
+          schemathesis run http://localhost:8000/openapi.json \
+            --checks all \
+            --header "Authorization: Bearer ci-test-key" \
+            2>&1 | tee schemathesis.txt || true
+
+      - name: OWASP ZAP baseline
+        run: |
+          mkdir -p zap-out && chmod 777 zap-out
+          docker run --network host -v "${{ github.workspace }}/zap-out:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:8000 -r zap-report.html -w zap-report.md -I || true
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-reports
+          path: |
+            schemathesis.txt
+            zap-out/
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

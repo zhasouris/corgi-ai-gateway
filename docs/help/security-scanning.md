@@ -1,10 +1,10 @@
-# Security scanning (SAST)
+# Security scanning (SAST + DAST)
 
-Static analysis runs in CI on every push/PR (and weekly). Findings appear in the
-repo's **Security → Code scanning** tab. DAST (running-app scanning) is a planned
-follow-up; this covers the static side.
+Static analysis (SAST) runs on every push/PR + weekly; dynamic analysis (DAST)
+runs the app and scans it, on a schedule + manual trigger. SAST findings appear in
+**Security → Code scanning**; DAST results are workflow artifacts.
 
-## What runs (`.github/workflows/security-sast.yml`)
+## SAST — what runs (`.github/workflows/security-sast.yml`)
 
 | Job | Tool | Covers |
 |---|---|---|
@@ -17,6 +17,23 @@ follow-up; this covers the static side.
 
 Dependency updates + alerts come from **`.github/dependabot.yml`** (npm, pip,
 docker, and github-actions).
+
+## DAST — what runs (`.github/workflows/security-dast.yml`)
+
+Brings the proxy up via `docker compose` (dummy provider keys — no real secrets)
+and scans it. Runs weekly + on manual **workflow_dispatch** (Actions → security-dast
+→ Run workflow), since it's slower than SAST.
+
+| Step | Tool | Covers |
+|---|---|---|
+| OpenAPI fuzzing | Schemathesis | property-fuzzes every endpoint in `/openapi.json` — 500s, crashes, schema violations |
+| Baseline scan | OWASP ZAP | header injection, missing security headers, common API/web issues |
+| Auth boundary | curl assertions | `/v1/chat/completions` & `/v1/models` → 401 without a key; `/v1/router/explain` (demo) → 200 |
+
+The auth-boundary assertions **hard-fail** the job on a regression (a real security
+guarantee); Schemathesis and ZAP are informational and uploaded as the
+`dast-reports` artifact. Upstream provider calls just 401 under the dummy key, so no
+real LLM calls are made.
 
 ## Custom rules (`.semgrep/rules.yml`)
 
