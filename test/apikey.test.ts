@@ -44,6 +44,12 @@ describe("resolveApiKey", () => {
     expect(getConfig().resolveApiKey("openai")).toBe("provider-default");
   });
 
+  it("treats an empty env var as absent (not an empty-string key)", () => {
+    process.env.OPENAI_API_KEY = "";
+    resetConfigCache();
+    expect(getConfig().resolveApiKey("openai", "fixture-no-key")).toBeUndefined();
+  });
+
   it("forwards the per-model key in the upstream Authorization header", async () => {
     process.env.FIXTURE_MODEL_KEY = "per-model-key";
     resetConfigCache();

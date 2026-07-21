@@ -164,12 +164,14 @@ export function getConfig(): AppConfig {
     catalog,
     secrets: {
       routerApiKeys,
-      classifierApiKey: process.env.CLASSIFIER_API_KEY,
+      // `|| undefined` so an empty env var (e.g. `CLASSIFIER_API_KEY=`) is
+      // treated as absent — otherwise `?? fallback` would keep the empty string.
+      classifierApiKey: process.env.CLASSIFIER_API_KEY || undefined,
     },
     providerApiKey(provider: string): string | undefined {
       const p = server.providers[provider];
       if (!p) return undefined;
-      return process.env[p.api_key_env];
+      return process.env[p.api_key_env] || undefined;
     },
     resolveApiKey(provider: string, modelId?: string): string | undefined {
       if (modelId) {
