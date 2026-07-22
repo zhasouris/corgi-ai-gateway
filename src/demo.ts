@@ -114,6 +114,12 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
   table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
   th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #8882; }
   tr.win { background: #7c3aed22; font-weight: 600; }
+  /* Outranked the chosen model on score but had no API key to call it with. */
+  tr.skipped { opacity: 0.55; }
+  tr.skipped td:nth-child(2) { text-decoration: line-through; }
+  .tag { display: inline-block; margin-left: 0.4rem; padding: 0.02rem 0.35rem; border-radius: 999px;
+    background: #7c3aed33; font-size: 0.7rem; font-weight: 500; vertical-align: middle; }
+  .tag.muted { background: #8882; }
   .badges span { display: inline-block; padding: 0.1rem 0.5rem; margin: 0.15rem; border-radius: 999px;
     background: #8882; font-size: 0.8rem; }
   .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; font-size: 0.9rem; }
@@ -282,9 +288,21 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
       '</div></div>';
 
     if (data.ranked && data.ranked.length) {
-      var rows = data.ranked.map(function (r, i) {
-        return '<tr class="' + (i === 0 ? 'win' : '') + '"><td>' + avail(r.model) + '</td><td>' +
-          esc(r.model) + '</td><td>' + esc(r.tier) +
+      // Highlight the model actually chosen, which is not always the top score:
+      // a higher-ranked model with no API key is passed over. Mark that one too,
+      // so the gap between "scored best" and "was used" is visible rather than
+      // implied by the ⚪.
+      var chosen = data.decision ? data.decision.model : null;
+      var topScorer = data.ranked[0].model;
+      var passedOver = chosen !== null && topScorer !== chosen;
+
+      var rows = data.ranked.map(function (r) {
+        var cls = r.model === chosen ? 'win' : (passedOver && r.model === topScorer ? 'skipped' : '');
+        var note = '';
+        if (r.model === chosen) note = ' <span class="tag">chosen</span>';
+        else if (passedOver && r.model === topScorer) note = ' <span class="tag muted">top score, no key</span>';
+        return '<tr class="' + cls + '"><td>' + avail(r.model) + '</td><td>' +
+          esc(r.model) + note + '</td><td>' + esc(r.tier) +
           '</td><td>' + r.score.toFixed(3) + '</td><td>$' + r.estimatedCost.toFixed(5) + '</td></tr>';
       }).join('');
       html += '<div class="card"><h3>Ranked candidates</h3><table>' +
