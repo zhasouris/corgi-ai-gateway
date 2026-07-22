@@ -117,6 +117,28 @@ Each ADR carries its own follow-up checklist.
 
 ---
 
+### 6. Verify the Gemini prices, and keep the catalog honest
+
+The `gemini-2.x` ids were retired mid-flight — Google kept **listing** them while
+answering `404 "no longer available to new users"`, so a present, valid key routed
+confidently to models that could not be called. Replaced 2026-07-22 with ids proven
+callable through `/v1/router/providers`.
+
+- [ ] **`cost_per_1k_input`/`output` for the five `gemini-3.x` entries are carried over
+      from the 2.x models they replace and are UNVERIFIED.** They are marked as such in
+      `config/models.yaml`. The API exposes no pricing, so this needs a human against
+      Google's pricing page. A wrong price never errors — it silently biases every `cost`
+      and `balanced` decision, which is worse than the 404 that started this.
+- [ ] Decide pinned ids vs. `-latest` aliases as policy. Aliases never 404 but move the
+      model underneath fixed tier/cost/latency metadata, so the catalog quietly stops
+      describing reality. Pinned ids were chosen here; they will retire again.
+- [ ] `gemini-3.1-pro-preview` is the only working Pro-class Google model and is a
+      **preview** — expect it to be retired on the same pattern.
+- [ ] Run `/v1/router/providers` in CI (against a scratch key) or on a schedule, so a
+      retired model is caught by the build rather than by a user.
+
+---
+
 ## Carried over
 
 Already tracked elsewhere; listed here so this file is the single view.
