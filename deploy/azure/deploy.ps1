@@ -48,6 +48,17 @@ param(
     [int]$MinReplicas = 0,
     [int]$MaxReplicas = 3,
 
+    # Deploy the RouteLLM sidecar (ADR 0006) and show its learned signal in the
+    # inspector. Costs real money: see -SidecarMinReplicas.
+    [switch]$WithRouteLLM,
+
+    # 1 keeps the sidecar resident so it always answers. 0 lets it scale to
+    # zero - near-free at rest, but it reloads the model from HuggingFace on
+    # the next request, so the inspector reports RouteLLM unavailable until it
+    # finishes warming up.
+    [ValidateRange(0, 1)]
+    [int]$SidecarMinReplicas = 1,
+
     # Skip the image build and redeploy the app against an existing tag.
     [string]$ImageTag
 )
@@ -200,6 +211,53 @@ else {
 
 $image = "$acrLoginServer/llm-model-router:$ImageTag"
 
+# --- 2b. the RouteLLM sidecar ----------------------------------------------
+
+$routellmUrl = ''
+if ($WithRouteLLM) {
+    # The mf router embeds prompts through OpenAI, so the sidecar needs a key of
+    # its own even in demo-only mode - where the router container deliberately
+    # has none. The key lives only in the sidecar, which has internal ingress,
+    # so it still cannot be used to run a completion from outside.
+    $sidecarOpenaiKey = Get-EnvValue 'OPENAI_API_KEY'
+    if (-not $sidecarOpenaiKey) { $sidecarOpenaiKey = Get-EnvValue 'CLASSIFIER_API_KEY' }
+    if (-not $sidecarOpenaiKey) {
+        throw "The RouteLLM sidecar needs OPENAI_API_KEY (or CLASSIFIER_API_KEY) in $EnvFile for prompt embeddings."
+    }
+
+    Write-Step "Building sidecar image in ACR (tag: $ImageTag)"
+    Write-Note 'Large image - it pulls PyTorch. First build takes several minutes.'
+    az acr build `
+        --registry $acrName `
+        --image "routellm-sidecar:$ImageTag" `
+        --file (Join-Path $repoRoot 'sidecar/Dockerfile') `
+        --only-show-errors `
+        (Join-Path $repoRoot 'sidecar')
+    if ($LASTEXITCODE -ne 0) { throw 'Sidecar image build failed.' }
+
+    Write-Step 'Deploying RouteLLM sidecar (sidecar.bicep)'
+    $sidecarJson = az deployment group create `
+        --resource-group $ResourceGroup `
+        --name "$NamePrefix-sidecar" `
+        --template-file (Join-Path $PSScriptRoot 'sidecar.bicep') `
+        --parameters `
+            "location=$Location" `
+            "namePrefix=$NamePrefix" `
+            "environmentId=$($infra.environmentId.value)" `
+            "identityId=$($infra.identityId.value)" `
+            "acrLoginServer=$acrLoginServer" `
+            "image=$acrLoginServer/routellm-sidecar:$ImageTag" `
+            "openaiApiKey=$sidecarOpenaiKey" `
+            "minReplicas=$SidecarMinReplicas" `
+        --query properties.outputs `
+        --output json
+    if ($LASTEXITCODE -ne 0) { throw 'Sidecar deployment failed.' }
+
+    $routellmUrl = ($sidecarJson | ConvertFrom-Json).internalUrl.value
+    Write-Note "Sidecar reachable in-environment at $routellmUrl"
+    Write-Note 'It downloads model weights on first start; RouteLLM shows as unavailable until that finishes.'
+}
+
 # --- 3. the app ------------------------------------------------------------
 
 Write-Step 'Deploying container app (app.bicep)'
@@ -219,6 +277,8 @@ $appParams = @(
     "anthropicApiKey=$anthropicKey"
     "classifierApiKey=$classifierKey"
     "demoEnabled=$($DemoEnabled.IsPresent.ToString().ToLower())"
+    "routellmEnabled=$($WithRouteLLM.IsPresent.ToString().ToLower())"
+    "routellmUrl=$routellmUrl"
     "minReplicas=$MinReplicas"
     "maxReplicas=$MaxReplicas"
 )

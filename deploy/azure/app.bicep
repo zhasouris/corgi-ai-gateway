@@ -46,6 +46,12 @@ param classifierApiKey string = ''
 @description('Serve the /demo inspector and /v1/router/explain. These are deliberately unauthenticated, and each call spends classifier tokens — leave off unless the demo is the point.')
 param demoEnabled bool = false
 
+@description('Show the RouteLLM learned signal alongside the classifier in the inspector. Requires the sidecar (sidecar.bicep) to be deployed.')
+param routellmEnabled bool = false
+
+@description('Internal URL of the RouteLLM sidecar, e.g. http://llmrouter-sidecar.')
+param routellmUrl string = ''
+
 @description('Scale to zero when idle. Costs nothing at rest; first request after idle pays a cold start.')
 param minReplicas int = 0
 
@@ -145,7 +151,7 @@ var baseEnv = [
   }
   {
     name: 'ROUTELLM_ENABLED'
-    value: 'false'
+    value: string(routellmEnabled)
   }
   {
     name: 'PORT'
@@ -153,7 +159,14 @@ var baseEnv = [
   }
 ]
 
-var env = concat(baseEnv, routerKeysEnv, openaiEnv, anthropicEnv, classifierEnv)
+var routellmUrlEnv = empty(routellmUrl) ? [] : [
+  {
+    name: 'ROUTELLM_URL'
+    value: routellmUrl
+  }
+]
+
+var env = concat(baseEnv, routerKeysEnv, openaiEnv, anthropicEnv, classifierEnv, routellmUrlEnv)
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${namePrefix}-app'
