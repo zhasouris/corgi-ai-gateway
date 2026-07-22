@@ -12,6 +12,7 @@
     "eval": "tsx eval/run.ts",
     "eval:judge": "tsx eval/judge-run.ts",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.16.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^4.1.10"

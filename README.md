@@ -3,6 +3,7 @@
 **An OpenAI-compatible proxy that picks the best model for every request — automatically.**
 
 ![tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)
+![coverage](https://img.shields.io/badge/coverage-81%25%20lines-green)
 ![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2011%2F11%20gold-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-97.7%25-3178c6)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)

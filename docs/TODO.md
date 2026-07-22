@@ -8,25 +8,23 @@ The single place for open work. Decisions that are settled live in
 
 ## Queued
 
-### 1. Code coverage badge
+### 1. Code coverage badge ✅ done
 
-Report and publish test coverage, and surface it as a README badge next to the
-existing `tests` badge.
+- [x] Coverage via `@vitest/coverage-v8` (`npm run coverage`), excluding the process
+      entrypoint and the static demo page.
+- [x] Thresholds set at the measured baseline (statements 78 / branches 58 /
+      functions 83 / lines 80) — CI fails on a regression below them.
+- [x] `ci.yml` workflow runs typecheck + tests + coverage on every push/PR (previously
+      nothing ran the tests in CI at all) and uploads the report as an artifact.
+- [x] README badge shows **81% lines**.
 
-- [ ] Enable coverage in `vitest.config.ts` (`@vitest/coverage-v8`), with sensible
-      excludes (`eval/`, `test/`, generated output).
-- [ ] Decide a realistic threshold and fail CI below it (start at the current number,
-      ratchet up — don't invent a target we then paper over).
-- [ ] Publish the number. Options, cheapest first:
-      - a shields.io **endpoint badge** backed by a gist updated from CI (no third party
-        beyond gist);
-      - **Codecov**/Coveralls (nicer PR annotations, adds an external service + token);
-      - a committed static badge (simplest, but goes stale — least honest).
-- [ ] Wire it into the SAST workflow or a small `test` workflow so it refreshes on push.
-
-*Note:* coverage should be reported honestly. Large parts of this repo are thin glue
-(config loading, adapters) where a high number is easy; the parts worth covering are the
-scoring engine, constraints, and adapters — which the 69 tests already exercise.
+**Follow-up (open):** the badge number is currently static, kept honest by the enforced
+floor — it can under-report if coverage improves, but never over-report. Swap it for a
+live badge when convenient:
+- [ ] shields.io **endpoint badge** backed by a gist updated from CI (needs a gist +
+      a PAT secret), or **Codecov** (tokenless for public repos, adds a third party).
+- [ ] Raise **branch coverage (58%)** — the weakest metric. Most of the gap is
+      error/degradation paths (adapter fallbacks, telemetry exporter branches).
 
 ### 2. ADR — routing sensitive data to approved/trusted providers
 
