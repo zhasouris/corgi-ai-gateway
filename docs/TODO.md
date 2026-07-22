@@ -55,6 +55,15 @@ Implementation queue (from the ADR's follow-ups):
 
 ---
 
+### 3. Document `/v1/router/explain` in the OpenAPI spec
+
+The demo endpoint is absent from `src/openapi.ts` entirely, so it never appears on the
+Swagger page even though it is a public, unauthenticated part of the surface. It now also
+emits the `X-Router-Model` / `X-Router-Reason` / `X-Router-Warning` response headers, which
+should be documented the same way the `/v1/chat/completions` ones are.
+
+---
+
 ## Carried over
 
 Already tracked elsewhere; listed here so this file is the single view.
