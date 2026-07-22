@@ -14,7 +14,7 @@ forwards — the whole `/v1` surface answers 401. Running on Azure Container App
 a few seconds for a cold start.*
 
 [![live demo](https://img.shields.io/badge/live%20demo-decision%20inspector-7c3aed)](https://llmrouter-app.purplehill-bc78c3f6.eastus2.azurecontainerapps.io)
-![tests](https://img.shields.io/badge/tests-115%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-131%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-88%25%20lines-green)
 ![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2011%2F11%20gold-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-97.7%25-3178c6)
@@ -280,7 +280,7 @@ that turns "is it any good?" into numbers — two ways, each honest about what i
 | Method | What it proves | Result |
 | --- | --- | --- |
 | **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error) | **11/11** |
-| **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (balanced, 12-prompt set) |
+| **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (balanced, 12-prompt set) — measured before the [ADR 0003 `fixedScale`](docs/decisions/0003-rule-and-scoring-engine.md) scoring change; not yet re-run |
 
 ```bash
 npm run eval          # dry-run: strategies vs. baselines + estimated cost (hermetic)
