@@ -89,6 +89,9 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
   .banner { font-size: 1.1rem; }
   .banner b { font-size: 1.25rem; }
   .muted { opacity: 0.7; }
+  .lat { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.45rem; border-radius: 999px;
+    background: #8882; font-size: 0.75rem; font-variant-numeric: tabular-nums; vertical-align: middle;
+    cursor: help; }
   table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
   th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #8882; }
   tr.win { background: #7c3aed22; font-weight: 600; }
@@ -157,6 +160,13 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
       '<table>' + rows + '</table></div>';
   }
 
+  // Routing latency — the proxy's own overhead, excluding any upstream call.
+  function latency(data) {
+    if (data.routingMs == null) return '';
+    return '<span class="lat" title="Time spent routing: detection, signal, filtering and scoring. ' +
+      'Excludes the upstream model call.">' + esc(data.routingMs) + ' ms</span>';
+  }
+
   function render(data, status, hdrs) {
     if (status !== 200 || data.error) {
       out.innerHTML = '<div class="card err">Error ' + status + ': ' +
@@ -167,6 +177,7 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
     if (data.bypassed) {
       out.innerHTML = '<div class="card banner">Forced to <b>' + esc(data.decision ? data.decision.model : '-') + '</b> ' +
         (data.decision ? '<span class="muted">(' + esc(data.decision.provider) + ')</span>' : '') +
+        latency(data) +
         '<br><span class="muted">routing skipped (X-Router-Bypass) — the model is used verbatim</span></div>' +
         headersCard(hdrs) +
         '<details><summary>Raw JSON</summary><pre>' + esc(JSON.stringify(data, null, 2)) + '</pre></details>';
@@ -177,7 +188,7 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
 
     if (data.decision) {
       html += '<div class="card banner">Routed to <b>' + esc(data.decision.model) + '</b> ' +
-        '<span class="muted">(' + esc(data.decision.provider) + ')</span><br>' +
+        '<span class="muted">(' + esc(data.decision.provider) + ')</span>' + latency(data) + '<br>' +
         '<span class="muted">' + esc(data.decision.reason) + '</span></div>';
     } else {
       html += '<div class="card err">No eligible model for this request.</div>';
