@@ -4,16 +4,22 @@
  * Instrumentation is vendor-neutral; the backend is an exporter choice selected
  * in server.yaml: console (dev), OTLP (generic collector), and/or Azure Monitor
  * (Application Insights). Best-effort — a telemetry failure never stops the proxy.
+ *
+ * Targets the OTel JS 2.x API: resources are built with `resourceFromAttributes`
+ * and processors are passed to the provider constructors (the old
+ * `addSpanProcessor` / `addLogRecordProcessor` mutators were removed).
  */
 
-import { logs } from "@opentelemetry/api-logs";
 import { metrics } from "@opentelemetry/api";
-import { Resource } from "@opentelemetry/resources";
+import { logs } from "@opentelemetry/api-logs";
+import { resourceFromAttributes, type Resource } from "@opentelemetry/resources";
 import {
-  LoggerProvider,
   BatchLogRecordProcessor,
   ConsoleLogRecordExporter,
+  LoggerProvider,
   SimpleLogRecordProcessor,
+  type LogRecordExporter,
+  type LogRecordProcessor,
 } from "@opentelemetry/sdk-logs";
 import {
   ConsoleMetricExporter,
@@ -26,6 +32,7 @@ import {
   ConsoleSpanExporter,
   SimpleSpanProcessor,
   type SpanExporter,
+  type SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
@@ -42,12 +49,17 @@ function azureConnectionString(): string | undefined {
   return process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
 }
 
+// Pass the signal name as a separate argument rather than interpolating it into
+// the format string (keeps static analysers happy and logs structured).
+const warn = (what: string) => (err: unknown) =>
+  console.warn("telemetry setup failed, continuing:", what, (err as Error).message);
+
 export function setupTelemetry(config: AppConfig): void {
   if (configured) return;
   configured = true;
 
   const tel = config.server.telemetry;
-  const resource = new Resource({ [ATTR_SERVICE_NAME]: tel.service_name });
+  const resource = resourceFromAttributes({ [ATTR_SERVICE_NAME]: tel.service_name });
   const azureConn = azureConnectionString();
   const azureOn = tel.azure_monitor.enabled && Boolean(azureConn);
   if (tel.azure_monitor.enabled && !azureConn) {
@@ -59,26 +71,19 @@ export function setupTelemetry(config: AppConfig): void {
   if (tel.logs.enabled) setupLogs(resource, tel, azureOn, azureConn).catch(warn("logs"));
 }
 
-// Pass the signal name as a separate argument rather than interpolating it into
-// the format string (keeps static analysers happy and logs structured).
-const warn = (what: string) => (err: unknown) =>
-  console.warn("telemetry setup failed, continuing:", what, (err as Error).message);
-
 async function setupTraces(
   resource: Resource,
   tel: AppConfig["server"]["telemetry"],
   azureOn: boolean,
   azureConn?: string,
 ): Promise<void> {
-  const provider = new NodeTracerProvider({ resource });
+  const spanProcessors: SpanProcessor[] = [];
   if (tel.console_export) {
-    provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+    spanProcessors.push(new SimpleSpanProcessor(new ConsoleSpanExporter()));
   }
   if (tel.otlp.enabled) {
     const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http");
-    provider.addSpanProcessor(
-      new BatchSpanProcessor(new OTLPTraceExporter({ url: tel.otlp.endpoint })),
-    );
+    spanProcessors.push(new BatchSpanProcessor(new OTLPTraceExporter({ url: tel.otlp.endpoint })));
   }
   if (azureOn) {
     const { AzureMonitorTraceExporter } = await import("@azure/monitor-opentelemetry-exporter");
@@ -86,9 +91,9 @@ async function setupTraces(
     const exporter = new AzureMonitorTraceExporter({
       connectionString: azureConn,
     }) as unknown as SpanExporter;
-    provider.addSpanProcessor(new BatchSpanProcessor(exporter));
+    spanProcessors.push(new BatchSpanProcessor(exporter));
   }
-  provider.register();
+  new NodeTracerProvider({ resource, spanProcessors }).register();
 }
 
 async function setupMetrics(
@@ -116,8 +121,7 @@ async function setupMetrics(
     }) as unknown as PushMetricExporter;
     readers.push(new PeriodicExportingMetricReader({ exporter }));
   }
-  const provider = new MeterProvider({ resource, readers });
-  metrics.setGlobalMeterProvider(provider);
+  metrics.setGlobalMeterProvider(new MeterProvider({ resource, readers }));
 }
 
 async function setupLogs(
@@ -126,23 +130,24 @@ async function setupLogs(
   azureOn: boolean,
   azureConn?: string,
 ): Promise<void> {
-  const provider = new LoggerProvider({ resource });
+  const processors: LogRecordProcessor[] = [];
   if (tel.console_export) {
-    provider.addLogRecordProcessor(new SimpleLogRecordProcessor(new ConsoleLogRecordExporter()));
+    processors.push(new SimpleLogRecordProcessor({ exporter: new ConsoleLogRecordExporter() }));
   }
   if (tel.otlp.enabled) {
     const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-http");
-    provider.addLogRecordProcessor(
-      new BatchLogRecordProcessor(
-        new OTLPLogExporter({ url: otlpEndpoint(tel.otlp.endpoint, "logs") }),
-      ),
+    processors.push(
+      new BatchLogRecordProcessor({
+        exporter: new OTLPLogExporter({ url: otlpEndpoint(tel.otlp.endpoint, "logs") }),
+      }),
     );
   }
   if (azureOn) {
     const { AzureMonitorLogExporter } = await import("@azure/monitor-opentelemetry-exporter");
-    provider.addLogRecordProcessor(
-      new BatchLogRecordProcessor(new AzureMonitorLogExporter({ connectionString: azureConn })),
-    );
+    const exporter = new AzureMonitorLogExporter({
+      connectionString: azureConn,
+    }) as unknown as LogRecordExporter;
+    processors.push(new BatchLogRecordProcessor({ exporter }));
   }
-  logs.setGlobalLoggerProvider(provider);
+  logs.setGlobalLoggerProvider(new LoggerProvider({ resource, processors }));
 }

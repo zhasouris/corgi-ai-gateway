@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "OpenAI-compatible LLM routing proxy that picks the best model per request",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
@@ -13,26 +15,31 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@azure/monitor-opentelemetry-exporter": "^1.0.0-beta.28",
+    "@azure/monitor-opentelemetry-exporter": "^1.0.0-beta.32",
     "@hono/node-server": "^1.13.0",
     "@hono/swagger-ui": "^0.5.0",
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/api-logs": "^0.54.0",
-    "@opentelemetry/exporter-logs-otlp-http": "^0.54.0",
-    "@opentelemetry/exporter-metrics-otlp-http": "^0.54.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
-    "@opentelemetry/resources": "^1.27.0",
-    "@opentelemetry/sdk-logs": "^0.54.0",
-    "@opentelemetry/sdk-metrics": "^1.27.0",
-    "@opentelemetry/sdk-trace-base": "^1.27.0",
-    "@opentelemetry/sdk-trace-node": "^1.27.0",
-    "@opentelemetry/semantic-conventions": "^1.27.0",
+    "@opentelemetry/api-logs": "^0.221.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.221.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.221.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.221.0",
+    "@opentelemetry/resources": "^2.10.0",
+    "@opentelemetry/sdk-logs": "^0.221.0",
+    "@opentelemetry/sdk-metrics": "^2.10.0",
+    "@opentelemetry/sdk-trace-base": "^2.10.0",
+    "@opentelemetry/sdk-trace-node": "^2.10.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
     "dotenv": "^16.4.0",
     "gpt-tokenizer": "^2.5.0",
     "hono": "^4.6.0",
     "openai": "^4.68.0",
     "yaml": "^2.6.0",
     "zod": "^3.23.0"
+  },
+  "//overrides": "The Azure Monitor exporter bundles an older @opentelemetry/sdk-logs that pulls a @opentelemetry/core affected by GHSA-8988-4f7v-96qf (baggage DoS). No fixed Azure release exists yet, so force the nested copies to the patched 2.x line (same major the bundled sdk-logs targets).",
+  "overrides": {
+    "@opentelemetry/core": "^2.10.0",
+    "@opentelemetry/resources": "^2.10.0"
   },
   "devDependencies": {
     "@types/node": "^20.16.0",
