@@ -93,6 +93,24 @@ appears to.
 
 ---
 
+### 5. Scoring refinements — ADRs written, implementation open
+
+Two ADRs, split because one is a data problem and the other an algorithm problem:
+
+- **[ADR 0010 — Per-Task Competency Scores](decisions/0010-per-task-competency-scores.md)**
+  — replace the single `tier` scalar with sparse, provenanced per-task scores in
+  `config/competency.yaml`, benchmark-seeded and telemetry-corrected.
+  **Blocked on item 4**: competency scoring is only as good as the `taskType` label, and the
+  heuristic currently calls a Rust concurrency question `conversation`.
+- **[ADR 0011 — Lexicographic Tie-Break](decisions/0011-lexicographic-tie-break.md)** —
+  a `tie_break: { within, prefer }` knob that composes with any strategy, so
+  `quality-prefer-cost` and `cost-prefer-quality` become presets rather than new machinery.
+  Not blocked; implementable now.
+
+Each ADR carries its own follow-up checklist.
+
+---
+
 ## Carried over
 
 Already tracked elsewhere; listed here so this file is the single view.
