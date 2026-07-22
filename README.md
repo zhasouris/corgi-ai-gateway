@@ -345,7 +345,8 @@ layer (Anthropic native Messages API, OpenAI-compat passthrough for the rest —
 [docs/transformers.md](docs/transformers.md)); pluggable signal (heuristic / LLM classifier
 / RouteLLM sidecar); strategy-weighted scoring; header control; streaming; per-model API
 keys; OpenTelemetry (traces, metrics, logs); Docker; evaluation harness (dry-run + provable
-gold + quality-judged accuracy); CI security scanning (SAST + DAST).
+gold + quality-judged accuracy); CI (typecheck, tests, coverage floors) + security scanning
+(SAST + DAST).
 
 **In progress / deferred** (full backlog: [docs/TODO.md](docs/TODO.md)):
 
@@ -358,9 +359,8 @@ gold + quality-judged accuracy); CI security scanning (SAST + DAST).
 - Self-hosted / Ollama backends.
 - Offline, telemetry-fed ML router ([ADR 0005](docs/decisions)).
 - Automatic cross-provider failover.
-- Code coverage reporting + badge.
-- **ADR: routing sensitive data to approved/trusted providers** — turning the existing
-  `dataSensitivity` signal from a soft scoring weight into a hard, fail-closed constraint.
+- **Sensitive-data routing** — enforce data-handling policy as a hard, fail-closed
+  constraint ([ADR 0009](docs/decisions/0009-sensitive-data-routing.md), planned).
 
 ---
 
