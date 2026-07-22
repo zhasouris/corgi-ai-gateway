@@ -40,12 +40,22 @@ function errorResponse(message: string, status: 400 | 401, type: string): Respon
   });
 }
 
+/**
+ * HTTP header values must be Latin-1. Routing reasons and warnings are
+ * human-facing prose and may contain typographic punctuation (an em dash, say),
+ * which makes the runtime reject the entire response — so fold anything outside
+ * printable ASCII before it reaches a header. The body keeps the original text.
+ */
+function headerSafe(value: string): string {
+  return value.replace(/[^\x20-\x7e]/g, "-");
+}
+
 function decisionHeaders(decision: RoutingDecision): Record<string, string> {
   const headers: Record<string, string> = {
-    [H_MODEL]: decision.modelId,
-    [H_REASON]: decision.reason,
+    [H_MODEL]: headerSafe(decision.modelId),
+    [H_REASON]: headerSafe(decision.reason),
   };
-  if (decision.warnings.length) headers[H_WARNING] = decision.warnings.join("; ");
+  if (decision.warnings.length) headers[H_WARNING] = headerSafe(decision.warnings.join("; "));
   return headers;
 }
 
@@ -111,7 +121,17 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
         }
       }
 
-      return c.json({ ...result, routellm });
+      // Mirror the proxy path's response headers (ADR 0002). /v1/router/explain
+      // returns the decision as a body, but emitting the same headers lets the
+      // demo show exactly what a real client reads off /v1/chat/completions.
+      const headers: Record<string, string> = {};
+      if (result.decision) {
+        headers[H_MODEL] = headerSafe(result.decision.model);
+        headers[H_REASON] = headerSafe(result.decision.reason);
+      }
+      if (result.warnings.length) headers[H_WARNING] = headerSafe(result.warnings.join("; "));
+
+      return c.json({ ...result, routellm }, 200, headers);
     });
   }
 

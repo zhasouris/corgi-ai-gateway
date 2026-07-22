@@ -144,7 +144,20 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
   }
   function pct(x) { return Math.round(x * 100) + '%'; }
 
-  function render(data, status) {
+  // The response headers a real client would read off /v1/chat/completions.
+  // /v1/router/explain emits the same set (ADR 0002).
+  function headersCard(hdrs) {
+    var names = Object.keys(hdrs || {});
+    if (!names.length) return '';
+    var rows = names.map(function (n) {
+      return '<tr><td><code>' + esc(n) + '</code></td><td>' + esc(hdrs[n]) + '</td></tr>';
+    }).join('');
+    return '<div class="card"><h3>Response headers</h3>' +
+      '<p class="muted">What an OpenAI client reads off the real <code>/v1/chat/completions</code> response.</p>' +
+      '<table>' + rows + '</table></div>';
+  }
+
+  function render(data, status, hdrs) {
     if (status !== 200 || data.error) {
       out.innerHTML = '<div class="card err">Error ' + status + ': ' +
         esc(data && data.error ? (data.error.message || JSON.stringify(data.error)) : 'request failed') +
@@ -155,6 +168,7 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
       out.innerHTML = '<div class="card banner">Forced to <b>' + esc(data.decision ? data.decision.model : '-') + '</b> ' +
         (data.decision ? '<span class="muted">(' + esc(data.decision.provider) + ')</span>' : '') +
         '<br><span class="muted">routing skipped (X-Router-Bypass) — the model is used verbatim</span></div>' +
+        headersCard(hdrs) +
         '<details><summary>Raw JSON</summary><pre>' + esc(JSON.stringify(data, null, 2)) + '</pre></details>';
       return;
     }
@@ -224,6 +238,8 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
       html += '<div class="card warn">' + data.warnings.map(esc).join('<br>') + '</div>';
     }
 
+    html += headersCard(hdrs);
+
     html += '<details><summary>Raw JSON</summary><pre>' + esc(JSON.stringify(data, null, 2)) + '</pre></details>';
     out.innerHTML = html;
   }
@@ -247,7 +263,12 @@ export function demoHtml(presets: Preset[], modelIds: string[] = []): string {
         method: 'POST', headers: headers, body: JSON.stringify(body)
       });
       var data = await res.json();
-      render(data, res.status);
+      var hdrs = {};
+      ['X-Router-Model', 'X-Router-Reason', 'X-Router-Warning'].forEach(function (n) {
+        var v = res.headers.get(n);
+        if (v) hdrs[n] = v;
+      });
+      render(data, res.status, hdrs);
     } catch (e) {
       out.innerHTML = '<div class="card err">' + esc(e.message) + '</div>';
     } finally {

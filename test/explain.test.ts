@@ -119,6 +119,52 @@ describe("/v1/router/explain + /demo", () => {
     expect(json.routellm.enabled).toBe(false);
   });
 
+  it("emits the same decision headers as the proxy path (ADR 0002)", async () => {
+    const res = await createApp(deps()).request("/v1/router/explain", {
+      method: "POST",
+      headers: { "content-type": "application/json", "X-Router-Strategy": "cost" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "Say hi" }] }),
+    });
+    expect(res.status).toBe(200);
+    const model = res.headers.get("X-Router-Model");
+    const reason = res.headers.get("X-Router-Reason");
+    expect(model).toBeTruthy();
+    expect(reason).toBeTruthy();
+    // The headers must agree with the body — the demo renders both.
+    const json = (await res.json()) as { decision: { model: string; reason: string } };
+    expect(model).toBe(json.decision.model);
+    expect(reason).toBe(json.decision.reason);
+  });
+
+  it("reports a forced model in the headers when bypassed", async () => {
+    const res = await createApp(deps()).request("/v1/router/explain", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "X-Router-Bypass": "true",
+      },
+      body: JSON.stringify({ messages: [{ role: "user", content: "hi" }], model: "claude-sonnet-5" }),
+    });
+    expect(res.headers.get("X-Router-Model")).toBe("claude-sonnet-5");
+    expect(res.headers.get("X-Router-Reason")).toContain("forced");
+  });
+
+  // The bypass reason contains an em dash. Header values are Latin-1, so an
+  // unsanitised value makes the runtime reject the whole response with a 500.
+  it("folds non-ASCII in reasons so the header never breaks the response", async () => {
+    const res = await createApp(deps()).request("/v1/router/explain", {
+      method: "POST",
+      headers: { "content-type": "application/json", "X-Router-Bypass": "true" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "hi" }], model: "claude-sonnet-5" }),
+    });
+    expect(res.status).toBe(200);
+    const reason = res.headers.get("X-Router-Reason")!;
+    expect(reason).toMatch(/^[\x20-\x7e]*$/);
+    // The body keeps the original prose — only the header is folded.
+    const json = (await res.json()) as { decision: { reason: string } };
+    expect(json.decision.reason).toContain("—");
+  });
+
   it("keeps the rest of /v1 auth-guarded (models requires a key)", async () => {
     const res = await createApp(deps()).request("/v1/models");
     expect(res.status).toBe(401);
