@@ -103,6 +103,39 @@ export interface AppConfig {
   resolveApiKey(provider: string, modelId?: string): string | undefined;
 }
 
+const TRUTHY_ENV = new Set(["1", "true", "yes", "on"]);
+
+/** Read a boolean env var. Returns undefined when unset/blank so the YAML wins. */
+function boolEnv(name: string): boolean | undefined {
+  const raw = process.env[name];
+  if (raw == null || raw.trim() === "") return undefined;
+  return TRUTHY_ENV.has(raw.trim().toLowerCase());
+}
+
+/**
+ * Deployment-time overrides. config/*.yaml is baked into the container image, so
+ * a hosted environment has no way to edit it — these let a deployment flip the
+ * handful of switches that legitimately differ from local dev (console tracing
+ * off, Azure Monitor on, inspector page closed) without rebuilding the image.
+ * Only set values override; anything unset leaves the file value alone.
+ */
+function applyEnvOverrides(server: ServerConfig): ServerConfig {
+  const demo = boolEnv("DEMO_ENABLED");
+  if (demo !== undefined) server.demo.enabled = demo;
+
+  const consoleExport = boolEnv("OTEL_CONSOLE_EXPORT");
+  if (consoleExport !== undefined) server.telemetry.console_export = consoleExport;
+
+  const azureMonitor = boolEnv("AZURE_MONITOR_ENABLED");
+  if (azureMonitor !== undefined) server.telemetry.azure_monitor.enabled = azureMonitor;
+
+  const routellm = boolEnv("ROUTELLM_ENABLED");
+  if (routellm !== undefined) server.routellm.enabled = routellm;
+  if (process.env.ROUTELLM_URL) server.routellm.url = process.env.ROUTELLM_URL;
+
+  return server;
+}
+
 function loadYaml(name: string): unknown {
   const path = join(configDir(), name);
   let text: string;
@@ -134,7 +167,7 @@ let cached: AppConfig | null = null;
 export function getConfig(): AppConfig {
   if (cached) return cached;
 
-  const server = serverSchema.parse(loadYaml("server.yaml"));
+  const server = applyEnvOverrides(serverSchema.parse(loadYaml("server.yaml")));
   const strategyBook = strategiesSchema.parse(loadYaml("strategies.yaml"));
   const catalogRaw = catalogSchema.parse(loadYaml("models.yaml"));
 
