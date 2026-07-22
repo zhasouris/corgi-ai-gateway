@@ -62,6 +62,11 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
   const availabilityJson = JSON.stringify(
     Object.fromEntries(models.map((m) => [m.id, m.available])),
   ).replace(/</g, "\\u003c");
+  // The excluded list carries only model ids, so vendors are looked up here
+  // rather than threaded through the explain payload.
+  const vendorsJson = JSON.stringify(
+    Object.fromEntries(models.map((m) => [m.id, m.provider])),
+  ).replace(/</g, "\\u003c");
 
   // 🟢 routable / ⚪ no key. Carried in the option label because a <select>
   // cannot be styled per-option across browsers.
@@ -108,6 +113,7 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
   .banner b { font-size: 1.25rem; }
   .muted { opacity: 0.7; }
   .legend { font-size: 0.8rem; opacity: 0.75; cursor: help; align-self: center; }
+  .vendor { font-size: 0.85em; opacity: 0.8; cursor: help; }
   .lat { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.45rem; border-radius: 999px;
     background: #8882; font-size: 0.75rem; font-variant-numeric: tabular-nums; vertical-align: middle;
     cursor: help; }
@@ -166,6 +172,33 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
 <script>
   var PRESETS = ${presetsJson};
   var AVAILABLE = ${availabilityJson};
+  var VENDORS = ${vendorsJson};
+
+  // groq (Llama/Gemma inference) and xai (Grok) are easy to confuse at a
+  // glance, so the cell carries a tooltip spelling out which is which.
+  var VENDOR_HINT = {
+    groq: 'Groq - LPU inference for open-weights models (Llama, Gemma). Not xAI.',
+    xai: 'xAI - the Grok family. Not Groq.',
+    together: 'Together AI - hosted open-weights models',
+    google: 'Google - Gemini',
+    openai: 'OpenAI',
+    anthropic: 'Anthropic - Claude',
+    mistral: 'Mistral',
+    deepseek: 'DeepSeek',
+    cohere: 'Cohere'
+  };
+
+  function vendorCell(provider) {
+    var p = provider || '-';
+    var hint = VENDOR_HINT[p];
+    var title = hint ? ' title="' + esc(hint) + '"' : '';
+    return '<span class="vendor"' + title + '>' + esc(p) + '</span>';
+  }
+
+  /** For rows that carry only a model id (the excluded list). */
+  function vendorOf(model) {
+    return vendorCell(VENDORS[model]);
+  }
 
   // 🟢 the deployment holds a key for this model's provider; ⚪ it does not, so
   // the model is ranked but could not actually be forwarded to.
@@ -302,20 +335,21 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
         if (r.model === chosen) note = ' <span class="tag">chosen</span>';
         else if (passedOver && r.model === topScorer) note = ' <span class="tag muted">top score, no key</span>';
         return '<tr class="' + cls + '"><td>' + avail(r.model) + '</td><td>' +
-          esc(r.model) + note + '</td><td>' + esc(r.tier) +
+          esc(r.model) + note + '</td><td>' + vendorCell(r.provider) + '</td><td>' + esc(r.tier) +
           '</td><td>' + r.score.toFixed(3) + '</td><td>$' + r.estimatedCost.toFixed(5) + '</td></tr>';
       }).join('');
       html += '<div class="card"><h3>Ranked candidates</h3><table>' +
-        '<tr><th></th><th>model</th><th>tier</th><th>score</th><th>est. cost</th></tr>' + rows + '</table></div>';
+        '<tr><th></th><th>model</th><th>vendor</th><th>tier</th><th>score</th><th>est. cost</th></tr>' + rows + '</table></div>';
     }
 
     if (data.excluded && data.excluded.length) {
       var ex = data.excluded.map(function (e) {
-        return '<tr><td>' + avail(e.model) + '</td><td>' + esc(e.model) + '</td><td class="muted">' +
+        return '<tr><td>' + avail(e.model) + '</td><td>' + esc(e.model) + '</td><td>' +
+          vendorOf(e.model) + '</td><td class="muted">' +
           esc((e.failedConstraints || []).join(', ')) + '</td></tr>';
       }).join('');
       html += '<div class="card"><h3>Excluded by constraints</h3><table>' +
-        '<tr><th></th><th>model</th><th>failed</th></tr>' + ex + '</table></div>';
+        '<tr><th></th><th>model</th><th>vendor</th><th>failed</th></tr>' + ex + '</table></div>';
     }
 
     if (data.warnings && data.warnings.length) {
