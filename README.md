@@ -346,7 +346,7 @@ layer (Anthropic native Messages API, OpenAI-compat passthrough for the rest —
 keys; OpenTelemetry (traces, metrics, logs); Docker; evaluation harness (dry-run + provable
 gold + quality-judged accuracy); CI security scanning (SAST + DAST).
 
-**In progress / deferred (documented in the ADRs):**
+**In progress / deferred** (full backlog: [docs/TODO.md](docs/TODO.md)):
 
 - **RouteLLM shadow-eval → promotion** ([ADR 0006](docs/decisions)): the sidecar +
   `SignalProvider` are built; the accuracy lift vs. the heuristic is not yet benchmarked
@@ -357,6 +357,9 @@ gold + quality-judged accuracy); CI security scanning (SAST + DAST).
 - Self-hosted / Ollama backends.
 - Offline, telemetry-fed ML router ([ADR 0005](docs/decisions)).
 - Automatic cross-provider failover.
+- Code coverage reporting + badge.
+- **ADR: routing sensitive data to approved/trusted providers** — turning the existing
+  `dataSensitivity` signal from a soft scoring weight into a hard, fail-closed constraint.
 
 ---
 
