@@ -54,6 +54,12 @@ describe("demo-only deployment", () => {
     expect(res.status).toBe(200);
   });
 
+  it("points the root at the inspector", async () => {
+    const res = await createApp(deps()).request("/");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/demo");
+  });
+
   it("answers /v1/router/explain unauthenticated", async () => {
     const res = await createApp(deps()).request("/v1/router/explain", {
       method: "POST",
@@ -92,5 +98,22 @@ describe("demo-only deployment", () => {
 
   it("still serves /healthz for the platform probes", async () => {
     expect((await createApp(deps()).request("/healthz")).status).toBe(200);
+  });
+
+  // With the inspector off there is nothing human-facing left, so the root
+  // falls back to the API docs rather than redirecting to a route that would
+  // 404. The redirect must stay temporary for this reason.
+  it("falls back to the docs when the inspector is off", async () => {
+    process.env.DEMO_ENABLED = "false";
+    resetConfigCache();
+    try {
+      const res = await createApp(deps()).request("/");
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/docs");
+      expect((await createApp(deps()).request("/demo")).status).toBe(404);
+    } finally {
+      delete process.env.DEMO_ENABLED;
+      resetConfigCache();
+    }
   });
 });

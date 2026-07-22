@@ -37,6 +37,10 @@ than trusting: **an empty key set does not disable auth.** `makeAuth` treats
 `/v1/router/explain` are registered *ahead* of the auth middleware — Hono runs
 matching handlers in registration order.
 
+The container app's root URL lands on the inspector — `/` redirects to `/demo`
+(302), so the hostname Azure hands you is the shareable link with no path to
+remember. With the inspector off, `/` falls back to `/docs` instead.
+
 The result is a public page that demonstrates the routing decision, and a
 deployment whose maximum possible cost is one `gpt-4.1-nano` call per click.
 `test/demoonly.test.ts` pins this posture so a future reordering of the routes

@@ -69,6 +69,13 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
   app.get("/openapi.json", (c) => c.json(openApiSpec));
   app.get("/docs", swaggerUI({ url: "/openapi.json" }));
 
+  // Landing route. The inspector is the human-facing face of a deployment, so
+  // send the root there when it's on and fall back to the API docs when it
+  // isn't. 302 rather than 301 on purpose: the target depends on config, and a
+  // permanent redirect would stay cached in browsers after the demo is turned
+  // off — leaving visitors pinned to a route that no longer exists.
+  app.get("/", (c) => c.redirect(config.server.demo.enabled ? "/demo" : "/docs", 302));
+
   // Decision-inspector demo (page + explain endpoint). Registered BEFORE the
   // /v1 auth guard so it works with only the server-side classifier key — no
   // proxy key needed. It runs the pipeline for inspection but NEVER forwards a
