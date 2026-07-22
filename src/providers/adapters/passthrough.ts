@@ -7,9 +7,16 @@
 import type { BuildRequestArgs, ProviderAdapter, UpstreamRequest } from "../adapter.js";
 
 // Hop-by-hop / client-auth headers, plus ones undici's fetch refuses.
+//
+// `content-type` is dropped because we set it ourselves below. Incoming header
+// names arrive lowercased (Fetch `Headers` iteration), so keeping it would leave
+// both "content-type" and "Content-Type" as distinct keys on the object; undici
+// then merges them into "application/json, application/json". OpenAI tolerates
+// that, xAI rejects the request with 415.
 const DROP_REQUEST_HEADERS = new Set([
   "host",
   "content-length",
+  "content-type",
   "authorization",
   "connection",
   "accept-encoding",

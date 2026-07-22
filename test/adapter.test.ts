@@ -30,6 +30,29 @@ describe("passthrough adapter", () => {
   it("is identity for responses and streams", () => {
     expect(a.parseResponse(200, '{"ok":true}')).toBe('{"ok":true}');
   });
+
+  // Incoming header names arrive lowercased from Fetch `Headers` iteration. If
+  // the client's content-type survives, the object carries both "content-type"
+  // and "Content-Type" and undici merges them into
+  // "application/json, application/json" on the wire. OpenAI tolerates that;
+  // xAI answers 415, so a routed Grok call fails while an OpenAI one works.
+  it("emits exactly one content-type when the client already sent one", () => {
+    const req = a.buildRequest({
+      baseUrl: "https://api.x.ai/v1",
+      apiKey: "xai-x",
+      model: "grok-3-mini",
+      body: { model: "grok-3-mini", messages: [{ role: "user", content: "hi" }] },
+      stream: false,
+      incomingHeaders: { "content-type": "application/json", accept: "*/*" },
+    });
+
+    const names = Object.keys(req.headers).filter((h) => h.toLowerCase() === "content-type");
+    expect(names).toHaveLength(1);
+    // What undici would actually put on the wire.
+    expect(new Headers(req.headers).get("content-type")).toBe("application/json");
+    // Unrelated client headers still pass through.
+    expect(req.headers["accept"]).toBe("*/*");
+  });
 });
 
 describe("anthropic adapter — request", () => {
