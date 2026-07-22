@@ -56,7 +56,8 @@ npm start                   # serves on :8000
 or with Docker:
 
 ```bash
-docker compose up --build   # reads .env, serves on :8000
+docker compose up -d --build              # reads .env, serves on :8000
+docker compose --profile routellm up -d --build   # + the RouteLLM sidecar
 ```
 
 Call it exactly like the OpenAI API — just add a routing header:

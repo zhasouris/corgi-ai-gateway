@@ -1,6 +1,9 @@
 services:
   router:
     build: .
+    # Pinned so the container keeps a stable, predictable name across recreates
+    # rather than a generated <project>-router-1.
+    container_name: llm-model-router
     ports:
       - "8000:8000"
     # Secrets are read from .env at the repo root (gitignored). Compose passes
@@ -18,10 +21,13 @@ services:
 
   # RouteLLM signal sidecar (ADR 0006). Heavy (pulls PyTorch + model weights), so
   # it's opt-in via a profile. To show RouteLLM's win-rate in the demo:
-  #   docker compose --profile routellm up --build
-  #   then set ROUTELLM_ENABLED=true on the router (or routellm.enabled in server.yaml)
+  #   docker compose --profile routellm up -d --build
+  #   then set ROUTELLM_ENABLED=true in .env (or routellm.enabled in server.yaml)
   routellm-sidecar:
     build: ./sidecar
+    # The router reaches the sidecar at this hostname (see ROUTELLM_URL above),
+    # so the name is part of the contract, not cosmetic.
+    container_name: routellm-sidecar
     profiles: ["routellm"]
     env_file:
       - .env # OPENAI_API_KEY — the mf router embeds prompts via OpenAI
