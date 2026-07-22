@@ -41,12 +41,24 @@ import type { AppConfig } from "./config.js";
 let configured = false;
 
 /** Derive a sibling OTLP signal endpoint from the configured traces endpoint. */
-function otlpEndpoint(tracesEndpoint: string, signal: "metrics" | "logs"): string {
+export function otlpEndpoint(tracesEndpoint: string, signal: "metrics" | "logs"): string {
   return tracesEndpoint.replace(/\/v1\/traces\/?$/, `/v1/${signal}`);
 }
 
 function azureConnectionString(): string | undefined {
   return process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+}
+
+// Traces, metrics, and logs are set up concurrently and all three need the same
+// Azure exporter package. Memoise the import so it is loaded once rather than
+// three times in parallel.
+let azureExportersPromise:
+  | Promise<typeof import("@azure/monitor-opentelemetry-exporter")>
+  | undefined;
+
+function azureExporters() {
+  azureExportersPromise ??= import("@azure/monitor-opentelemetry-exporter");
+  return azureExportersPromise;
 }
 
 // Pass the signal name as a separate argument rather than interpolating it into
@@ -86,7 +98,7 @@ async function setupTraces(
     spanProcessors.push(new BatchSpanProcessor(new OTLPTraceExporter({ url: tel.otlp.endpoint })));
   }
   if (azureOn) {
-    const { AzureMonitorTraceExporter } = await import("@azure/monitor-opentelemetry-exporter");
+    const { AzureMonitorTraceExporter } = await azureExporters();
     // Cast bridges a bundled-OTel version skew between the Azure exporter and our SDK.
     const exporter = new AzureMonitorTraceExporter({
       connectionString: azureConn,
@@ -115,7 +127,7 @@ async function setupMetrics(
     );
   }
   if (azureOn) {
-    const { AzureMonitorMetricExporter } = await import("@azure/monitor-opentelemetry-exporter");
+    const { AzureMonitorMetricExporter } = await azureExporters();
     const exporter = new AzureMonitorMetricExporter({
       connectionString: azureConn,
     }) as unknown as PushMetricExporter;
@@ -143,7 +155,7 @@ async function setupLogs(
     );
   }
   if (azureOn) {
-    const { AzureMonitorLogExporter } = await import("@azure/monitor-opentelemetry-exporter");
+    const { AzureMonitorLogExporter } = await azureExporters();
     const exporter = new AzureMonitorLogExporter({
       connectionString: azureConn,
     }) as unknown as LogRecordExporter;

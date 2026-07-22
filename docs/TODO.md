@@ -12,19 +12,27 @@ The single place for open work. Decisions that are settled live in
 
 - [x] Coverage via `@vitest/coverage-v8` (`npm run coverage`), excluding the process
       entrypoint and the static demo page.
-- [x] Thresholds set at the measured baseline (statements 78 / branches 58 /
-      functions 83 / lines 80) — CI fails on a regression below them.
+- [x] Thresholds set at the measured baseline and ratcheted up as coverage improved —
+      now statements 85 / branches 64 / functions 87 / lines 87. CI fails below them.
+- [x] `telemetry.ts` taken from **0% → 100%** (statements, branches, functions); it was
+      the single largest hole. Includes the ADR 0008/0009 egress guard: the Azure Monitor
+      exporter is never constructed without a connection string.
 - [x] `ci.yml` workflow runs typecheck + tests + coverage on every push/PR (previously
       nothing ran the tests in CI at all) and uploads the report as an artifact.
-- [x] README badge shows **81% lines**.
+- [x] README badge shows **88% lines**.
 
 **Follow-up (open):** the badge number is currently static, kept honest by the enforced
 floor — it can under-report if coverage improves, but never over-report. Swap it for a
 live badge when convenient:
 - [ ] shields.io **endpoint badge** backed by a gist updated from CI (needs a gist +
       a PAT secret), or **Codecov** (tokenless for public repos, adds a third party).
-- [ ] Raise **branch coverage (58%)** — the weakest metric. Most of the gap is
-      error/degradation paths (adapter fallbacks, telemetry exporter branches).
+- [ ] Raise **branch coverage (64%)** — still the weakest metric. The remaining gap is
+      concentrated in four files: `providers/adapters/anthropic.ts` (62 uncovered
+      branches), `core/signal.ts` (26), `app.ts` (16), `report.ts` (11).
+      Note that v8 counts every `??`/`?.` as a branch pair — `anthropic.ts` alone has 46
+      of them in 288 lines — so a defensive codebase structurally lags here. A 90% branch
+      target would mostly mean testing fallbacks that cannot occur; ~80% is the honest
+      ceiling worth chasing. Statements/lines/functions are the metrics to push to 90%.
 
 ### 2. Sensitive-data routing — ADR written ✅, implementation open
 

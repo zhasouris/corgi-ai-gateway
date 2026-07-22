@@ -16,10 +16,10 @@ export default defineConfig({
       // Floors set at the measured baseline so CI fails on a regression. Ratchet
       // these up as coverage improves — never down to make a build pass.
       thresholds: {
-        statements: 78,
-        branches: 58,
-        functions: 83,
-        lines: 80,
+        statements: 85,
+        branches: 64,
+        functions: 87,
+        lines: 87,
       },
     },
   },
