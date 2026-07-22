@@ -38,6 +38,13 @@ param(
     # are unauthenticated by design and every call spends classifier tokens.
     [switch]$DemoEnabled,
 
+    # Publish ONLY the decision inspector. Ships the classifier key and nothing
+    # else, and deliberately leaves ROUTER_API_KEYS unset so the entire /v1
+    # surface answers 401. The demo works because /v1/router/explain is
+    # registered ahead of the auth middleware. Nothing can be forwarded to a
+    # provider, so the only spend possible is classifier tokens.
+    [switch]$DemoOnly,
+
     [int]$MinReplicas = 0,
     [int]$MaxReplicas = 3,
 
@@ -99,21 +106,47 @@ function Get-EnvValue($name) {
     return ''
 }
 
-$routerApiKeys = Get-EnvValue 'ROUTER_API_KEYS'
-if (-not $routerApiKeys) {
-    throw @"
+if ($DemoOnly) {
+    # Inspector-only: ship the classifier key and nothing else, and leave
+    # ROUTER_API_KEYS unset so no bearer token can ever match.
+    $DemoEnabled = [switch]$true
+
+    $classifierKey = Get-EnvValue 'CLASSIFIER_API_KEY'
+    if (-not $classifierKey) { $classifierKey = Get-EnvValue 'OPENAI_API_KEY' }
+    if (-not $classifierKey) {
+        throw "Demo-only needs a classifier key: set CLASSIFIER_API_KEY (or OPENAI_API_KEY) in $EnvFile."
+    }
+
+    $routerApiKeys = ''
+    $openaiKey = ''
+    $anthropicKey = ''
+
+    Write-Note 'Mode: DEMO ONLY'
+    Write-Note '  classifier key  shipped (the inspector needs it for real signals)'
+    Write-Note '  provider keys   NOT shipped - nothing can be forwarded upstream'
+    Write-Note '  ROUTER_API_KEYS unset - the whole /v1 surface answers 401'
+}
+else {
+    $routerApiKeys = Get-EnvValue 'ROUTER_API_KEYS'
+    if (-not $routerApiKeys) {
+        throw @"
 ROUTER_API_KEYS is empty in $EnvFile.
 
-This deployment is publicly reachable with no gateway in front of it, so an
-empty value would leave /v1/chat/completions open to the internet - anyone
-could spend your provider credits. Set at least one bearer token and re-run.
+This deployment is publicly reachable with no gateway in front of it, and the
+proxy's own bearer auth is the only thing protecting /v1/chat/completions.
+Set at least one token and re-run - or pass -DemoOnly to publish just the
+decision inspector with no provider keys at all.
 "@
-}
+    }
+    $openaiKey = Get-EnvValue 'OPENAI_API_KEY'
+    $anthropicKey = Get-EnvValue 'ANTHROPIC_API_KEY'
+    $classifierKey = Get-EnvValue 'CLASSIFIER_API_KEY'
 
-# Report which keys were found, never their values.
-foreach ($k in @('OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'CLASSIFIER_API_KEY', 'ROUTER_API_KEYS')) {
-    $state = if (Get-EnvValue $k) { 'set' } else { 'absent' }
-    Write-Note ("{0,-24} {1}" -f $k, $state)
+    # Report which keys were found, never their values.
+    foreach ($k in @('OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'CLASSIFIER_API_KEY', 'ROUTER_API_KEYS')) {
+        $state = if (Get-EnvValue $k) { 'set' } else { 'absent' }
+        Write-Note ("{0,-24} {1}" -f $k, $state)
+    }
 }
 
 # --- 1. infrastructure -----------------------------------------------------
@@ -175,9 +208,9 @@ $appParams = @(
     "appInsightsName=$($infra.appInsightsName.value)"
     "image=$image"
     "routerApiKeys=$routerApiKeys"
-    "openaiApiKey=$(Get-EnvValue 'OPENAI_API_KEY')"
-    "anthropicApiKey=$(Get-EnvValue 'ANTHROPIC_API_KEY')"
-    "classifierApiKey=$(Get-EnvValue 'CLASSIFIER_API_KEY')"
+    "openaiApiKey=$openaiKey"
+    "anthropicApiKey=$anthropicKey"
+    "classifierApiKey=$classifierKey"
     "demoEnabled=$($DemoEnabled.IsPresent.ToString().ToLower())"
     "minReplicas=$MinReplicas"
     "maxReplicas=$MaxReplicas"
@@ -235,11 +268,60 @@ catch {
     }
 }
 
+if ($DemoEnabled) {
+    # The inspector has to actually work, and it has to work unauthenticated -
+    # it sits ahead of the auth middleware on purpose.
+    try {
+        $explain = Invoke-WebRequest -Uri "$url/v1/router/explain" -Method Post `
+            -ContentType 'application/json' `
+            -Body '{"messages":[{"role":"user","content":"Say hi"}]}' `
+            -TimeoutSec 40 -UseBasicParsing
+        if ($explain.StatusCode -eq 200) {
+            $decision = ($explain.Content | ConvertFrom-Json).decision
+            Write-Host "    /v1/router/explain 200 -> $($decision.model)" -ForegroundColor Green
+            Write-Host "    X-Router-Duration-Ms $($explain.Headers['X-Router-Duration-Ms'])" -ForegroundColor Green
+        }
+    }
+    catch {
+        $code = $null
+        if ($_.Exception.Response) { $code = $_.Exception.Response.StatusCode.value__ }
+        Write-Warning "/v1/router/explain returned $code - the inspector is not working."
+    }
+}
+
+if ($DemoOnly) {
+    # Forwarding must be impossible: no provider keys were shipped, and with no
+    # router token the endpoint is unreachable in the first place.
+    try {
+        Invoke-WebRequest -Uri "$url/v1/chat/completions" -Method Post `
+            -ContentType 'application/json' `
+            -Body '{"model":"auto","messages":[{"role":"user","content":"hi"}]}' `
+            -TimeoutSec 20 -UseBasicParsing | Out-Null
+        Write-Warning 'DEMO-ONLY BREACH: /v1/chat/completions answered without a key.'
+    }
+    catch {
+        $code = $null
+        if ($_.Exception.Response) { $code = $_.Exception.Response.StatusCode.value__ }
+        if ($code -eq 401) {
+            Write-Host '    /v1/chat/completions 401 (closed, as intended)' -ForegroundColor Green
+        }
+        else {
+            Write-Warning "/v1/chat/completions returned $code - expected 401."
+        }
+    }
+}
+
 Write-Step 'Done'
 Write-Host "  URL:     $url"
 Write-Host "  Swagger: $url/docs"
 if ($DemoEnabled) {
     Write-Host "  Demo:    $url/demo   (public, unauthenticated, spends classifier tokens)" -ForegroundColor Yellow
+}
+if ($DemoOnly) {
+    Write-Host ''
+    Write-Host '  Demo-only: the inspector is the whole surface. No provider keys were' -ForegroundColor DarkGray
+    Write-Host '  deployed, so nothing can be forwarded upstream and the only cost this' -ForegroundColor DarkGray
+    Write-Host '  deployment can incur is classifier tokens, one cheap call per inspect.' -ForegroundColor DarkGray
 }
 Write-Host "  Logs:    az containerapp logs show -n $NamePrefix-app -g $ResourceGroup --follow"
 Write-Host "  Remove:  ./teardown.ps1 -ResourceGroup $ResourceGroup"

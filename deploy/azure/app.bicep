@@ -30,9 +30,9 @@ param image string
 @description('Name of the Application Insights component to send telemetry to.')
 param appInsightsName string
 
-@description('Comma-separated bearer tokens clients present to the proxy. Required: the app is publicly reachable, so an empty value would leave /v1/chat/completions open to anyone.')
+@description('Comma-separated bearer tokens clients present to the proxy. Leaving this empty does NOT disable auth — it means no token can ever match, so the whole /v1 surface answers 401. That is the correct setting for a demo-only deployment; /v1/router/explain is registered ahead of the auth middleware and still works.')
 @secure()
-param routerApiKeys string
+param routerApiKeys string = ''
 
 @secure()
 param openaiApiKey string = ''
@@ -82,18 +82,21 @@ var classifierSecret = empty(classifierApiKey) ? [] : [
   }
 ]
 
-var baseSecrets = [
+var routerKeysSecret = empty(routerApiKeys) ? [] : [
   {
     name: 'router-api-keys'
     value: routerApiKeys
   }
+]
+
+var baseSecrets = [
   {
     name: 'appinsights-connection-string'
     value: appInsights.properties.ConnectionString
   }
 ]
 
-var secrets = concat(baseSecrets, openaiSecret, anthropicSecret, classifierSecret)
+var secrets = concat(baseSecrets, routerKeysSecret, openaiSecret, anthropicSecret, classifierSecret)
 
 var openaiEnv = empty(openaiApiKey) ? [] : [
   {
@@ -114,11 +117,14 @@ var classifierEnv = empty(classifierApiKey) ? [] : [
   }
 ]
 
-var baseEnv = [
+var routerKeysEnv = empty(routerApiKeys) ? [] : [
   {
     name: 'ROUTER_API_KEYS'
     secretRef: 'router-api-keys'
   }
+]
+
+var baseEnv = [
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
     secretRef: 'appinsights-connection-string'
@@ -147,7 +153,7 @@ var baseEnv = [
   }
 ]
 
-var env = concat(baseEnv, openaiEnv, anthropicEnv, classifierEnv)
+var env = concat(baseEnv, routerKeysEnv, openaiEnv, anthropicEnv, classifierEnv)
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${namePrefix}-app'
