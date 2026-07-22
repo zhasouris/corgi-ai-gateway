@@ -280,7 +280,15 @@ that turns "is it any good?" into numbers — two ways, each honest about what i
 | Method | What it proves | Result |
 | --- | --- | --- |
 | **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error) | **11/11** |
-| **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (balanced, 12-prompt set) — measured before the [ADR 0003 `fixedScale`](docs/decisions/0003-rule-and-scoring-engine.md) scoring change; not yet re-run |
+| **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (balanced, 12-prompt set) |
+
+Two honest limits on that judged number. It is **n=12**, so a single prompt moves it by 8
+points — treat it as a smoke test, not a benchmark. And the harness runs the *deterministic
+heuristic* signal provider, not the LLM classifier that production defaults to; both
+under-routes below are prompts the heuristic mis-reads (see [TODO item 4](docs/TODO.md)).
+Re-measured after the [ADR 0003 `fixedScale`](docs/decisions/0003-rule-and-scoring-engine.md)
+scoring change and unchanged by it — 0% over-routing held, which is the property that matters
+for spend.
 
 ```bash
 npm run eval          # dry-run: strategies vs. baselines + estimated cost (hermetic)

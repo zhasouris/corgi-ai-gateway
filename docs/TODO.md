@@ -87,9 +87,15 @@ appears to.
       function", stack traces) instead of defaulting to `conversation`.
 - [ ] Revisit the complexity rule's hard cliff at `0.5` — a small change either side of it
       flips the tier preference from strongest to weakest.
-- [ ] Let `eval/run.ts` take `--provider llm` so the harness can measure the path that
-      production actually uses. Today it only supports `heuristic` and `routellm`, which is
-      why the tier-accuracy numbers below are heuristic-only.
+- [ ] Let `eval/run.ts` **and `eval/judge-run.ts`** take `--provider llm` so the harness can
+      measure the path production actually uses. Both hardcode `HeuristicSignalProvider`
+      (`judge-run.ts:107`), so *every* published accuracy figure describes the degraded
+      fallback rather than the default.
+
+**Direct evidence, from the judged run of 2026-07-22:** both of the two under-routes were
+prompts the heuristic mis-reads — `hard-race` (a concurrency question) and `med-palindrome`
+were each sent to `gpt-4.1-nano` (tier 2) when the judge found the strong answer meaningfully
+better. That is 2 of 12, i.e. the entire gap between 83% and 100% on that set.
 
 ---
 
