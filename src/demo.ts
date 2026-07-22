@@ -170,10 +170,20 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
   // The router scores on capability and price, not on whether a key exists, so
   // the winner can be a model this deployment cannot actually call. Say so here
   // rather than letting it surface later as a 401 from the provider.
+  // groq and grok are one letter apart and mean entirely different things:
+  // groq is the LPU inference vendor (Llama, Gemma); Grok is xAI's model family,
+  // served by the xai provider. Spell it out wherever a provider is blamed.
+  // (No backticks here - this script lives inside an outer template literal.)
+  function providerLabel(p) {
+    if (p === 'groq') return 'groq <span class="muted">(Llama/Gemma inference — not xAI\\u2019s Grok)</span>';
+    if (p === 'xai') return 'xai <span class="muted">(Grok)</span>';
+    return esc(p);
+  }
+
   function unroutableNote(decision) {
     if (!decision || AVAILABLE[decision.model]) return '';
-    return '<br><span class="warn">⚪ no API key for ' + esc(decision.provider) +
-      ' — this deployment would rank it first but fail to forward</span>';
+    return '<br><span class="warn">⚪ no API key for ' + providerLabel(decision.provider) +
+      ' — ranked first, but this deployment could not forward to it</span>';
   }
   var btn = document.getElementById('go');
   var out = document.getElementById('out');

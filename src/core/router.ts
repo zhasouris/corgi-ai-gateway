@@ -17,6 +17,7 @@ import type {
   RequestAnalysis,
   RoutingDecision,
   RoutingRequest,
+  ScoredModel,
   Strategy,
 } from "../types.js";
 import { makeAnalyze, type AnalyzeFn } from "./analysis.js";
@@ -54,6 +55,63 @@ export class Router {
     const model = this.byId.get(modelId);
     if (model) return model.provider;
     return modelId.startsWith("claude") ? "anthropic" : "openai";
+  }
+
+  /** Can this deployment actually authenticate to the model (ADR 0007)? */
+  private isRoutable(model: ModelDescriptor): boolean {
+    return Boolean(this.config.resolveApiKey(model.provider, model.id));
+  }
+
+  /**
+   * Pick the best model we can actually reach.
+   *
+   * Credentials are deliberately not a hard constraint: the catalog stays
+   * complete so an inspector-only deployment (no provider keys at all) can
+   * still rank and explain every model. So instead of filtering, walk the
+   * ranked list and take the first routable entry, reporting anything skipped
+   * on the way as a fallback — that keeps the answer useful *and* honest about
+   * what the raw scoring preferred.
+   */
+  private pickRoutable(ranked: ScoredModel[], strategy: Strategy): {
+    top: ScoredModel;
+    reason: string;
+    warnings: string[];
+  } {
+    const idx = ranked.findIndex((s) => this.isRoutable(s.model));
+    const warnings: string[] = [];
+
+    // Nothing is reachable — an inspector-only deployment. Rank normally and
+    // say so rather than pretending the top pick could be called.
+    if (idx < 0) {
+      const top = ranked[0]!;
+      warnings.push("no API key is configured for any eligible model; nothing could be forwarded");
+      return {
+        top,
+        // Reasons are emitted as an HTTP header (X-Router-Reason), so keep them
+        // plain ASCII rather than relying on the header-safety fold.
+        reason: `${topReason(top, strategy)} - unroutable: no API key for ${top.model.provider}`,
+        warnings,
+      };
+    }
+
+    const top = ranked[idx]!;
+    if (idx === 0) return { top, reason: topReason(top, strategy), warnings };
+
+    const skipped = ranked.slice(0, idx);
+    const best = skipped[0]!;
+    const providers = [...new Set(skipped.map((s) => s.model.provider))].join(", ");
+    warnings.push(
+      `skipped ${skipped.length} higher-scoring model(s) with no API key: ${skipped
+        .map((s) => `${s.model.id} (${s.model.provider})`)
+        .join(", ")}`,
+    );
+    return {
+      top,
+      reason:
+        `${topReason(top, strategy)} - best routable; ` +
+        `${best.model.id} scored higher (${best.score.toFixed(2)}) but no API key for ${providers}`,
+      warnings,
+    };
   }
 
   async decide(req: RoutingRequest): Promise<RouteTrace> {
@@ -105,9 +163,10 @@ export class Router {
 
       const weights = this.config.strategies[req.options.strategy] ?? {};
       const ranked = scoreModels(candidates, ALL_RULES, analysis.features, weights);
-      const top = ranked[0]!;
+      const picked = this.pickRoutable(ranked, req.options.strategy);
+      const top = picked.top;
 
-      const warnings = [...req.options.warnings];
+      const warnings = [...req.options.warnings, ...picked.warnings];
       if (analysis.classifier.degraded) {
         warnings.push("classifier degraded; used deterministic defaults");
       }
@@ -136,7 +195,7 @@ export class Router {
         decision: {
           modelId: top.model.id,
           provider: top.model.provider,
-          reason: topReason(top, req.options.strategy),
+          reason: picked.reason,
           strategy: req.options.strategy,
           bypassed: false,
           ranked,
@@ -223,12 +282,16 @@ export class Router {
       ),
     }));
 
-    const warnings = [...req.options.warnings];
+    // Same choice the forwarding path would make, so the inspector reports the
+    // model that would really be called — while `ranked` still lists everything,
+    // including the higher-scoring entries that were skipped for want of a key.
+    const picked = scored.length ? this.pickRoutable(scored, req.options.strategy) : null;
+
+    const warnings = [...req.options.warnings, ...(picked?.warnings ?? [])];
     if (analysis.classifier.degraded) {
       warnings.push("signal degraded; used deterministic defaults");
     }
 
-    const top = scored[0];
     return {
       strategy: req.options.strategy,
       bypassed: false,
@@ -239,11 +302,11 @@ export class Router {
       eligible: eligibleModels.map((m) => m.id),
       excluded,
       ranked,
-      decision: top
+      decision: picked
         ? {
-            model: top.model.id,
-            provider: top.model.provider,
-            reason: topReason(top, req.options.strategy),
+            model: picked.top.model.id,
+            provider: picked.top.model.provider,
+            reason: picked.reason,
           }
         : null,
       warnings,
