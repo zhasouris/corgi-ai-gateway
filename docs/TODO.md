@@ -139,6 +139,20 @@ callable through `/v1/router/providers`.
 
 ---
 
+### 7. Classifier latency — ADR written, implementation open
+
+**[ADR 0012 — Reducing Classifier Latency on the Hot Path](decisions/0012-classifier-latency.md)**
+(*Proposed*). The router's entire overhead is one LLM round trip: bypass requests decide in
+**0–2 ms**, classified ones in **800–2100 ms**. Four layers, safest first — cache +
+`max_tokens` + a hoisted client cost nothing in quality; a faster classifier model and a
+smaller input window are trades the eval harness must arbitrate; a `X-Router-Signal` header
+lets callers opt out; asynchronous classification removes it from the hot path entirely but
+depends on [ADR 0005](decisions/0005-offline-ml-module.md).
+
+Layer 1 is unblocked and worth doing on its own.
+
+---
+
 ## Carried over
 
 Already tracked elsewhere; listed here so this file is the single view.

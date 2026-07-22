@@ -389,6 +389,9 @@ gold + quality-judged accuracy); CI (typecheck, tests, coverage floors) + securi
 - **Per-task competency scores** and **hybrid "prefer X among near-equals" selection**
   ([ADR 0010](docs/decisions/0010-per-task-competency-scores.md),
   [ADR 0011](docs/decisions/0011-lexicographic-tie-break.md), planned).
+- **Classifier latency** — the router adds ~1s, essentially all of it one LLM call; caching
+  and a bounded response are free wins ([ADR 0012](docs/decisions/0012-classifier-latency.md),
+  planned).
 
 ### Decision record
 
@@ -409,6 +412,7 @@ implementation is open.
 | [0009](docs/decisions/0009-sensitive-data-routing.md) | Sensitive data → approved providers, as a fail-closed **constraint** | 📋 Proposed |
 | [0010](docs/decisions/0010-per-task-competency-scores.md) | Per-task competency scores instead of a single `tier` scalar | 📋 Proposed — blocked on `taskType` accuracy ([TODO 4](docs/TODO.md)) |
 | [0011](docs/decisions/0011-lexicographic-tie-break.md) | Lexicographic tie-break — `quality-prefer-cost` and friends | 📋 Proposed — unblocked |
+| [0012](docs/decisions/0012-classifier-latency.md) | Cut classifier latency — the router's entire overhead is one LLM call | 📋 Proposed — layer 1 unblocked |
 
 ---
 
