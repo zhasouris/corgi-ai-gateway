@@ -413,6 +413,7 @@ implementation is open.
 | [0010](docs/decisions/0010-per-task-competency-scores.md) | Per-task competency scores instead of a single `tier` scalar | 📋 Proposed — blocked on `taskType` accuracy ([TODO 4](docs/TODO.md)) |
 | [0011](docs/decisions/0011-lexicographic-tie-break.md) | Lexicographic tie-break — `quality-prefer-cost` and friends | 📋 Proposed — unblocked |
 | [0012](docs/decisions/0012-classifier-latency.md) | Cut classifier latency — the router's entire overhead is one LLM call | 🟡 Partial — `latency` uses a fast signal (done); caching planned |
+| [0013](docs/decisions/0013-routellm-sidecar-transport.md) | Keep the HTTP sidecar (reject CLI); the real lever is the embedding hop | ✅ Accepted — local-embedding follow-up open |
 
 ---
 

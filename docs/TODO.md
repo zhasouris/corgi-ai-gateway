@@ -157,6 +157,16 @@ still unblocked and worth doing on its own.
 A measurement note worth keeping: RouteLLM was almost dismissed as ~2.2s. That was a Windows
 Docker Desktop published-port artifact — the real container-to-container path is ~250ms.
 
+**Sidecar transport settled** in [ADR 0013](decisions/0013-routellm-sidecar-transport.md):
+keep the HTTP service, reject a CLI (a per-request CLI re-pays torch import + model load every
+call; a co-process only removes a transport that is already ~0ms). The ~250ms is the OpenAI
+embedding call, so the real fix is a **local embedding model** in the sidecar (~10–50ms),
+which also drops the `OPENAI_API_KEY` dependency and would let RouteLLM run in the demo-only
+Azure deployment. That work is open:
+
+- [ ] Prototype a local embedding model in the sidecar; measure latency **and** judged accuracy.
+- [ ] If accuracy holds, enable RouteLLM in the demo-only Azure deployment (no OpenAI key needed).
+
 ---
 
 ## Carried over

@@ -164,4 +164,6 @@ speed without the eval harness arbitrating.**
 - [ADR 0005 — Offline ML Module](0005-offline-ml-module.md) (what makes Layer 4 viable)
 - [ADR 0006 — Leveraging Learned Routing](0006-leveraging-learned-routing.md) (RouteLLM is a
   signal provider too, and has its own latency profile)
+- [ADR 0013 — RouteLLM Sidecar Transport](0013-routellm-sidecar-transport.md) (why RouteLLM's
+  ~250 ms is the embedding call, not the transport — and why a CLI would not help)
 - [ADR 0008 — Observability](0008-observability.md) (measuring the improvement)
