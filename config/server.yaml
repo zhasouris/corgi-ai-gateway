@@ -72,7 +72,7 @@ providers:
     api_key_env: COHERE_API_KEY
 
 telemetry:
-  service_name: llm-model-router
+  service_name: corgi-gateway
   # Console exporter — handy for local dev (traces, metrics, logs).
   console_export: true
   otlp:

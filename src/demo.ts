@@ -93,7 +93,7 @@ export function demoHtml(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>llm-model-router — decision inspector</title>
+<title>corgi-gateway — decision inspector</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 1120px;

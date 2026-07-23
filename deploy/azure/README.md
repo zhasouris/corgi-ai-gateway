@@ -1,6 +1,6 @@
 # Deploying to Azure
 
-Deploys `llm-model-router` to **Azure Container Apps**, publicly reachable over
+Deploys `corgi-gateway` to **Azure Container Apps**, publicly reachable over
 HTTPS, with **no gateway or app registration in front of it**.
 
 ```

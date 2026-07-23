@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-19
-- **Context repo:** `llm-model-router`
+- **Context repo:** `corgi-gateway`
 
 ## Context
 

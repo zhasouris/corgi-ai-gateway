@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-20
-- **Context repo:** `llm-model-router`
+- **Context repo:** `corgi-gateway`
 - **Graduates:** [discussion — learned routing & cascade](../discussions/learned-routing-and-cascade.md)
 
 ## Context

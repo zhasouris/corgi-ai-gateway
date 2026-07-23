@@ -8,7 +8,7 @@
 export const openApiSpec = {
   openapi: "3.1.0",
   info: {
-    title: "llm-model-router",
+    title: "corgi-gateway",
     version: "0.1.0",
     description:
       "OpenAI-compatible routing proxy. Routing is on by default; steer it with " +

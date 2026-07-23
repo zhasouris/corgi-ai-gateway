@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// llm-model-router — the Container App itself.
+// corgi-gateway — the Container App itself.
 //
 // Deployed after infra.bicep and after an image has been pushed to the registry.
 // Every provider credential is optional: a key that is not supplied simply is
@@ -24,7 +24,7 @@ param identityId string
 @description('Registry login server, e.g. myacr.azurecr.io.')
 param acrLoginServer string
 
-@description('Fully qualified image reference, e.g. myacr.azurecr.io/llm-model-router:abc1234.')
+@description('Fully qualified image reference, e.g. myacr.azurecr.io/corgi-gateway:abc1234.')
 param image string
 
 @description('Name of the Application Insights component to send telemetry to.')
@@ -59,7 +59,7 @@ param minReplicas int = 0
 param maxReplicas int = 3
 
 param tags object = {
-  application: 'llm-model-router'
+  application: 'corgi-gateway'
   managedBy: 'bicep'
 }
 

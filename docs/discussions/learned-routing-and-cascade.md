@@ -2,7 +2,7 @@
 
 - **Status:** ✅ Graduated → [ADR 0006](../decisions/0006-leveraging-learned-routing.md) (2026-07-20)
 - **Date:** 2026-07-19
-- **Context repo:** `llm-model-router`
+- **Context repo:** `corgi-gateway`
 
 > This discussion resolved into **[ADR 0006 — Leveraging Learned Routing](../decisions/0006-leveraging-learned-routing.md)**:
 > use RouteLLM as a learned **signal provider** behind a versioned `SignalProvider`

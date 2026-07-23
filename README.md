@@ -1,6 +1,9 @@
-# llm-model-router
+# 🐕 Corgi Gateway
 
-**An OpenAI-compatible proxy that picks the best model for every request — automatically.**
+**An OpenAI-compatible gateway that herds every request to the best model — automatically.**
+
+`corgi-gateway` is the service; language clients that talk to it (e.g. the .NET
+[`corgi-client-dotnet`](https://github.com/zhasouris/corgi-client-dotnet)) share its name.
 
 ### ▶ [**Try the live decision inspector**](https://llmrouter-app.purplehill-bc78c3f6.eastus2.azurecontainerapps.io)
 
@@ -28,7 +31,7 @@ forwards to the right provider, and streams the response straight back. No clien
 beyond the base URL.
 
 ```
-your app ──(OpenAI SDK)──▶ llm-model-router ──▶ the right model, this time
+your app ──(OpenAI SDK)──▶ corgi-gateway ──▶ the right model, this time
                                 │
                     detect → classify → filter → score → forward
 ```
@@ -118,7 +121,7 @@ The open-source LLM tooling world is split into two halves that rarely meet:
 genuine per-request model decision, you generally end up reaching for commercial products
 (Martian, Not Diamond, Unify).
 
-`llm-model-router` is that missing intersection:
+`corgi-gateway` is that missing intersection:
 
 > **A drop-in OpenAI-compatible proxy with a pluggable difficulty/cost/quality scoring
 > engine and a clean header-based control surface — self-hosted, and yours.**

@@ -1,10 +1,10 @@
-# ADR 0014 — Official .NET Client (RouterClient) and Its Router-Side Prerequisites
+# ADR 0014 — Official .NET Client (Corgi.Client) and Its Router-Side Prerequisites
 
 - **Status:** Proposed (plan; the client is a separate codebase). Includes the
   distribution & repository-topology decision (polyrepo; versioned contract, not co-bundled binaries).
 - **Date:** 2026-07-23
-- **Context repo:** `llm-model-router` — this ADR records the **router-side** commitments
-  (R1–R4). The client itself (`RouterClient`, a .NET package set) lives in its own
+- **Context repo:** `corgi-gateway` — this ADR records the **router-side** commitments
+  (R1–R4). The client itself (`Corgi.Client`, a .NET package set) lives in its own
   repository; its internal design ADRs are referenced but not renumbered into this repo's
   `docs/decisions/` sequence.
 
@@ -24,7 +24,7 @@ This is **not** the advisory-mode client that was
 [proposed and reverted earlier](../TODO.md) (commit `4a7aa24`). That design had the client
 make the vendor call *itself*, moving provider keys and policy enforcement out of the proxy —
 rejected because a self-hosted proxy already sits inside the trust boundary, so nothing was
-gained. **RouterClient is the opposite:** every call still routes *through* the proxy. No keys
+gained. **Corgi.Client is the opposite:** every call still routes *through* the proxy. No keys
 move, no policy weakens, there is no second data path. The client adds cross-request *state
 and ergonomics* on top of the existing routed path — which is exactly the thing the stateless
 proxy cannot do and should not try to.
@@ -39,7 +39,7 @@ owned here.
 
 ## Decision
 
-**Build an official .NET client, `RouterClient`, and commit to the four router-side changes
+**Build an official .NET client, `Corgi.Client`, and commit to the four router-side changes
 (R1–R4) it depends on.** The full, authoritative build plan is preserved verbatim in the
 appendix. Two decisions in it are load-bearing and are called out here because they explain
 *why the client is even possible* without forking the OpenAI SDK:
@@ -86,7 +86,7 @@ different registries, at different times:
 
 | Component | Ships as | Installed by |
 |---|---|---|
-| Server (`llm-model-router`) | Docker image (already), optionally a standalone binary | whoever *operates* the router |
+| Server (`corgi-gateway`) | Docker image (already), optionally a standalone binary | whoever *operates* the router |
 | .NET client | NuGet package | an app *developer* (`dotnet add package`) |
 | TypeScript client | npm package | `npm install` |
 | Python client | PyPI package | `pip install` |
@@ -169,13 +169,15 @@ cross-linked READMEs, and the versioned contract spec as the common spine.
 
 ## Appendix — Authoritative build plan (verbatim)
 
-> The plan below is the authoritative specification for the **`RouterClient` .NET repository**.
-> Its internal `ADR-001` / `ADR-002` / `docs/adr/` references belong to **that** repo's own
-> ADR sequence and are distinct from this repo's `docs/decisions/` numbering. Only R1–R4 above
-> are commitments of `llm-model-router`.
+> The plan below is the authoritative specification for the **`Corgi.Client` .NET repository**
+> ([`corgi-client-dotnet`](https://github.com/zhasouris/corgi-client-dotnet)). It is preserved
+> verbatim, so it still uses the pre-rebrand name **`RouterClient`** for the package/types —
+> read that as **`Corgi.Client`**. Its internal `ADR-001` / `ADR-002` / `docs/adr/` references
+> belong to **that** repo's own ADR sequence, distinct from this repo's `docs/decisions/`
+> numbering. Only R1–R4 above are commitments of `corgi-gateway`.
 
 # RouterClient (.NET) — Build Plan
-**A .NET client for `llm-model-router` that makes routing control first-class in
+**A .NET client for `corgi-gateway` that makes routing control first-class in
 Semantic Kernel projects — without replacing the OpenAI client.**
 
 ---
@@ -185,7 +187,7 @@ Semantic Kernel projects — without replacing the OpenAI client.**
 This document is the authoritative build plan. Work through the phases in order.
 Where this says **DECISION**, record an ADR in `docs/adr/` before implementing. Where it
 says **DO NOT**, treat it as a hard scope constraint. Where it says **PREREQUISITE
-(router)**, that work lands in the `llm-model-router` repository first — this client
+(router)**, that work lands in the `corgi-gateway` repository first — this client
 cannot be completed without it.
 
 **Before writing code**, verify the current APIs of `OpenAI` (the official .NET SDK, v2.x)
@@ -280,7 +282,7 @@ inside each worker task, or the derived-client form used instead.
 
 ## 4. Router-side prerequisites
 
-These land in `llm-model-router` before or alongside this client. Track them as issues
+These land in `corgi-gateway` before or alongside this client. Track them as issues
 there, not here.
 
 | # | Change | Needed for |
@@ -519,7 +521,7 @@ frequently parallel.
 
 ## 9. Repository hygiene
 
-Carry over the standards from `llm-model-router`:
+Carry over the standards from `corgi-gateway`:
 
 - Repository description, topics (`dotnet`, `semantic-kernel`, `openai`, `llm`,
   `routing`), homepage set from day one
@@ -532,4 +534,4 @@ Carry over the standards from `llm-model-router`:
   convention, then pin/budget examples, then architecture. Lead with the batch job sample,
   not the pipeline diagram
 - Semgrep config and dependency scanning, matching the existing repo
-- Cross-link with `llm-model-router` in both READMEs so the two read as one stack
+- Cross-link with `corgi-gateway` in both READMEs so the two read as one stack
