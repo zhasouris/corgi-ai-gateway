@@ -1,0 +1,1974 @@
+{
+  "meta": {
+    "generated_on": "2026-07-23",
+    "methodology": "Per-vendor web research (fanned across 6 agents). Each category score is the mean of the available normalized (0-100) benchmarks for that category; null when none was found on the web (never guessed). Composite = weighted average of available category scores with the missing categories' weight redistributed proportionally (composite.partial=true when any category is missing). Assembled deterministically by scratchpad/assemble.mjs.",
+    "composite_weights": {
+      "reasoning": 0.25,
+      "coding": 0.25,
+      "math": 0.15,
+      "knowledge_qa": 0.15,
+      "instruction_following": 0.1,
+      "long_context": 0.1
+    },
+    "benchmark_notes": "Benchmark variants differ by vendor: Anthropic/xAI publish mostly GPQA-Diamond + SWE-bench Verified (agentic suite) and little classic academic data; Google reports non-standard variants (SWE-bench Pro, GDM-MRCR, LiveCodeBench-Pro Elo); knowledge_qa uses MMLU (SimpleQA where present); instruction_following blends IFEval with normalized LMArena Elo (normalization differs slightly across agents — treat cross-vendor IF scores as approximate); long_context uses MRCR at differing needle counts/context lengths. Cross-vendor comparison within a category is therefore approximate.",
+    "caveats": [
+      "Benchmark saturation and possible contamination on MMLU/HumanEval-class benchmarks.",
+      "Differing test conditions (extended-thinking vs standard, tool-assisted vs no-tools, AIME 2024 vs 2025) across models within a category.",
+      "Many 2026 flagship versions (Claude Opus 4.8, Sonnet 5, Gemini 3.x, Grok 4) publish few classic benchmarks -> null-heavy, composite.partial=true.",
+      "LMArena Elo normalization is not identical across vendor research passes.",
+      "DeepSeek deepseek-chat/deepseek-reasoner endpoints remap to deepseek-v4-flash on 2026-07-24; scores are pinned to V3.2-Exp / R1-0528.",
+      "Cohere Command R/R+ category scores are largely 'estimated' (vendor publishes no modern suite)."
+    ]
+  },
+  "models": [
+    {
+      "rank": 1,
+      "model_name": "claude-opus-4-8",
+      "model_id": "claude-opus-4-8",
+      "vendor": "anthropic",
+      "release_date": "2026-05-28",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 91.1,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 93.6,
+          "rank": 2
+        },
+        "coding": {
+          "score": 88.6,
+          "rank": 1
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1000000,
+        "max_output_tokens": 128000
+      },
+      "cost": {
+        "input_per_million_usd": 5,
+        "output_per_million_usd": 25,
+        "blended_per_million_usd": 10,
+        "cost_efficiency": 9.11
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 2,
+      "model_name": "Gemini 3.1 Pro Preview",
+      "model_id": "gemini-3.1-pro-preview",
+      "vendor": "google",
+      "release_date": "2026-02-19",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "composite": {
+        "score": 87.4,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 94,
+          "rank": 1
+        },
+        "coding": {
+          "score": 81,
+          "rank": 2
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": 93,
+          "rank": 1
+        },
+        "instruction_following": {
+          "score": 81,
+          "rank": 6
+        },
+        "long_context": {
+          "score": 85,
+          "rank": 1
+        }
+      },
+      "context": {
+        "max_context_tokens": 1048576,
+        "max_output_tokens": 65536
+      },
+      "cost": {
+        "input_per_million_usd": 2,
+        "output_per_million_usd": 12,
+        "blended_per_million_usd": 4.5,
+        "cost_efficiency": 19.42
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 3,
+      "model_name": "grok-4-0709",
+      "model_id": "grok-4",
+      "vendor": "xai",
+      "release_date": "2025-07-10",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 85.8,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 87.25,
+          "rank": 4
+        },
+        "coding": {
+          "score": 79.4,
+          "rank": 5
+        },
+        "math": {
+          "score": 94,
+          "rank": 3
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 256000,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 3,
+        "output_per_million_usd": 15,
+        "blended_per_million_usd": 6,
+        "cost_efficiency": 14.3
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 4,
+      "model_name": "grok-3-mini",
+      "model_id": "grok-3-mini",
+      "vendor": "xai",
+      "release_date": "2025-02-19",
+      "weights_access": "closed",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 85.3,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 84,
+          "rank": 5
+        },
+        "coding": {
+          "score": 80.4,
+          "rank": 3
+        },
+        "math": {
+          "score": 95.8,
+          "rank": 2
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 131072,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 0.3,
+        "output_per_million_usd": 0.5,
+        "blended_per_million_usd": 0.35,
+        "cost_efficiency": 243.71
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 5,
+      "model_name": "DeepSeek-V3.2-Exp",
+      "model_id": "deepseek-chat",
+      "vendor": "deepseek",
+      "release_date": "2025-09-29",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 84.5,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 83.7,
+          "rank": 6
+        },
+        "coding": {
+          "score": 80.25,
+          "rank": 4
+        },
+        "math": {
+          "score": 93.1,
+          "rank": 6
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1000000,
+        "max_output_tokens": 384000
+      },
+      "cost": {
+        "input_per_million_usd": 0.14,
+        "output_per_million_usd": 0.28,
+        "blended_per_million_usd": 0.175,
+        "cost_efficiency": 482.86
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 6,
+      "model_name": "grok-3",
+      "model_id": "grok-3",
+      "vendor": "xai",
+      "release_date": "2025-02-19",
+      "weights_access": "closed",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 83.7,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 82.25,
+          "rank": 9
+        },
+        "coding": {
+          "score": 79.4,
+          "rank": 6
+        },
+        "math": {
+          "score": 93.3,
+          "rank": 5
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 131072,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 3,
+        "output_per_million_usd": 15,
+        "blended_per_million_usd": 6,
+        "cost_efficiency": 13.95
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 7,
+      "model_name": "Gemini 3.1 Flash-Lite Preview",
+      "model_id": "gemini-3.1-flash-lite",
+      "vendor": "google",
+      "release_date": "2026-03-03",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "composite": {
+        "score": 82,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 82,
+          "rank": 10
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1048576,
+        "max_output_tokens": 65536
+      },
+      "cost": {
+        "input_per_million_usd": 0.25,
+        "output_per_million_usd": 1.5,
+        "blended_per_million_usd": 0.563,
+        "cost_efficiency": 145.65
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 8,
+      "model_name": "o3-2025-04-16",
+      "model_id": "o3",
+      "vendor": "openai",
+      "release_date": "2025-04-16",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 82,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 83.3,
+          "rank": 7
+        },
+        "coding": {
+          "score": 75,
+          "rank": 9
+        },
+        "math": {
+          "score": 91.6,
+          "rank": 7
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": 81.8,
+          "rank": 5
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 200000,
+        "max_output_tokens": 100000
+      },
+      "cost": {
+        "input_per_million_usd": 2,
+        "output_per_million_usd": 8,
+        "blended_per_million_usd": 3.5,
+        "cost_efficiency": 23.43
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 9,
+      "model_name": "Gemini 3.6 Flash",
+      "model_id": "gemini-3.6-flash",
+      "vendor": "google",
+      "release_date": "2026-07-21",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "composite": {
+        "score": 81.7,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 93,
+          "rank": 3
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": 81,
+          "rank": 7
+        },
+        "long_context": {
+          "score": 54,
+          "rank": 7
+        }
+      },
+      "context": {
+        "max_context_tokens": 1048576,
+        "max_output_tokens": 65536
+      },
+      "cost": {
+        "input_per_million_usd": 1.5,
+        "output_per_million_usd": 7.5,
+        "blended_per_million_usd": 3,
+        "cost_efficiency": 27.23
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 10,
+      "model_name": "o4-mini-2025-04-16",
+      "model_id": "o4-mini",
+      "vendor": "openai",
+      "release_date": "2025-04-16",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 80.9,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 81.4,
+          "rank": 11
+        },
+        "coding": {
+          "score": 77,
+          "rank": 8
+        },
+        "math": {
+          "score": 93.4,
+          "rank": 4
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": 70.6,
+          "rank": 10
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 200000,
+        "max_output_tokens": 100000
+      },
+      "cost": {
+        "input_per_million_usd": 1.1,
+        "output_per_million_usd": 4.4,
+        "blended_per_million_usd": 1.925,
+        "cost_efficiency": 42.03
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 11,
+      "model_name": "claude-haiku-4-5-20251001",
+      "model_id": "claude-haiku-4-5",
+      "vendor": "anthropic",
+      "release_date": "2025-10-15",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 80.2,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 76.7,
+          "rank": 13
+        },
+        "coding": {
+          "score": 67.7,
+          "rank": 12
+        },
+        "math": {
+          "score": 96.3,
+          "rank": 1
+        },
+        "knowledge_qa": {
+          "score": 90.8,
+          "rank": 2
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 200000,
+        "max_output_tokens": 64000
+      },
+      "cost": {
+        "input_per_million_usd": 1,
+        "output_per_million_usd": 5,
+        "blended_per_million_usd": 2,
+        "cost_efficiency": 40.1
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 12,
+      "model_name": "Mistral Medium 3.5",
+      "model_id": "mistral-medium-latest",
+      "vendor": "mistral",
+      "release_date": "2026-04-29",
+      "weights_access": "open",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 78,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": null,
+          "rank": null
+        },
+        "coding": {
+          "score": 78,
+          "rank": 7
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 262144,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 1.5,
+        "output_per_million_usd": 7.5,
+        "blended_per_million_usd": 3,
+        "cost_efficiency": 26
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 13,
+      "model_name": "DeepSeek-R1-0528",
+      "model_id": "deepseek-reasoner",
+      "vendor": "deepseek",
+      "release_date": "2025-05-28",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 77.3,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 83,
+          "rank": 8
+        },
+        "coding": {
+          "score": 65.45,
+          "rank": 13
+        },
+        "math": {
+          "score": 87.5,
+          "rank": 8
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1000000,
+        "max_output_tokens": 384000
+      },
+      "cost": {
+        "input_per_million_usd": 0.14,
+        "output_per_million_usd": 0.28,
+        "blended_per_million_usd": 0.175,
+        "cost_efficiency": 441.71
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 14,
+      "model_name": "claude-sonnet-5",
+      "model_id": "claude-sonnet-5",
+      "vendor": "anthropic",
+      "release_date": "2026-06-30",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 75.4,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 78,
+          "rank": 12
+        },
+        "coding": {
+          "score": 72.7,
+          "rank": 10
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1000000,
+        "max_output_tokens": 128000
+      },
+      "cost": {
+        "input_per_million_usd": 3,
+        "output_per_million_usd": 15,
+        "blended_per_million_usd": 6,
+        "cost_efficiency": 12.57
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 15,
+      "model_name": "Gemini 3.5 Flash-Lite",
+      "model_id": "gemini-3.5-flash-lite",
+      "vendor": "google",
+      "release_date": "2026-07-21",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "composite": {
+        "score": 72,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": null,
+          "rank": null
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": 72,
+          "rank": 3
+        }
+      },
+      "context": {
+        "max_context_tokens": 1048576,
+        "max_output_tokens": 65536
+      },
+      "cost": {
+        "input_per_million_usd": 0.3,
+        "output_per_million_usd": 2.5,
+        "blended_per_million_usd": 0.85,
+        "cost_efficiency": 84.71
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 16,
+      "model_name": "Ministral 3 8B (ministral-8b-2512)",
+      "model_id": "ministral-8b-latest",
+      "vendor": "mistral",
+      "release_date": "2025-12-04",
+      "weights_access": "open",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 71.3,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 66.8,
+          "rank": 16
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": 78.7,
+          "rank": 10
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 262100,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 0.15,
+        "output_per_million_usd": 0.15,
+        "blended_per_million_usd": 0.15,
+        "cost_efficiency": 475.33
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 17,
+      "model_name": "Mistral Large 3 (mistral-large-2512)",
+      "model_id": "mistral-large-latest",
+      "vendor": "mistral",
+      "release_date": "2025-12-02",
+      "weights_access": "open",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 68.5,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 68,
+          "rank": 15
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": 69.7,
+          "rank": 13
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 262144,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 0.5,
+        "output_per_million_usd": 1.5,
+        "blended_per_million_usd": 0.75,
+        "cost_efficiency": 91.33
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 18,
+      "model_name": "Meta Llama 3.1 405B Instruct",
+      "model_id": "meta-llama-3.1-405b-instruct-turbo",
+      "vendor": "meta",
+      "release_date": "2024-07-23",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 68.3,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 62,
+          "rank": 19
+        },
+        "coding": {
+          "score": 58,
+          "rank": 14
+        },
+        "math": {
+          "score": 74,
+          "rank": 12
+        },
+        "knowledge_qa": {
+          "score": 82,
+          "rank": 6
+        },
+        "instruction_following": {
+          "score": 89,
+          "rank": 2
+        },
+        "long_context": {
+          "score": 60,
+          "rank": 4
+        }
+      },
+      "context": {
+        "max_context_tokens": 130815,
+        "max_output_tokens": 4096
+      },
+      "cost": {
+        "input_per_million_usd": 3.5,
+        "output_per_million_usd": 3.5,
+        "blended_per_million_usd": 3.5,
+        "cost_efficiency": 19.51
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 19,
+      "model_name": "gpt-4o-mini-2024-07-18",
+      "model_id": "gpt-4o-mini",
+      "vendor": "openai",
+      "release_date": "2024-07-18",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 68.2,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 63.1,
+          "rank": 18
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": 70.2,
+          "rank": 13
+        },
+        "knowledge_qa": {
+          "score": 82,
+          "rank": 4
+        },
+        "instruction_following": {
+          "score": 57.4,
+          "rank": 16
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 128000,
+        "max_output_tokens": 16384
+      },
+      "cost": {
+        "input_per_million_usd": 0.15,
+        "output_per_million_usd": 0.6,
+        "blended_per_million_usd": 0.262,
+        "cost_efficiency": 260.31
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 20,
+      "model_name": "Meta Llama 3.3 70B Instruct",
+      "model_id": "llama-3.3-70b-versatile",
+      "vendor": "meta",
+      "release_date": "2024-12-06",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 68,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 60,
+          "rank": 21
+        },
+        "coding": {
+          "score": 55,
+          "rank": 16
+        },
+        "math": {
+          "score": 77,
+          "rank": 11
+        },
+        "knowledge_qa": {
+          "score": 78,
+          "rank": 8
+        },
+        "instruction_following": {
+          "score": 92,
+          "rank": 1
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 131072,
+        "max_output_tokens": 32768
+      },
+      "cost": {
+        "input_per_million_usd": 0.59,
+        "output_per_million_usd": 0.79,
+        "blended_per_million_usd": 0.64,
+        "cost_efficiency": 106.25
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 21,
+      "model_name": "Alibaba Qwen2.5 72B Instruct",
+      "model_id": "qwen2.5-72b-instruct-turbo",
+      "vendor": "alibaba",
+      "release_date": "2024-09-19",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 67.4,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 60,
+          "rank": 22
+        },
+        "coding": {
+          "score": 55,
+          "rank": 17
+        },
+        "math": {
+          "score": 83,
+          "rank": 9
+        },
+        "knowledge_qa": {
+          "score": 82,
+          "rank": 5
+        },
+        "instruction_following": {
+          "score": 84,
+          "rank": 3
+        },
+        "long_context": {
+          "score": 55,
+          "rank": 5
+        }
+      },
+      "context": {
+        "max_context_tokens": 32768,
+        "max_output_tokens": 8192
+      },
+      "cost": {
+        "input_per_million_usd": 1.2,
+        "output_per_million_usd": 1.2,
+        "blended_per_million_usd": 1.2,
+        "cost_efficiency": 56.17
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 22,
+      "model_name": "gpt-4.1-2025-04-14",
+      "model_id": "gpt-4.1",
+      "vendor": "openai",
+      "release_date": "2025-04-14",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 64.2,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 73.5,
+          "rank": 14
+        },
+        "coding": {
+          "score": 50.2,
+          "rank": 18
+        },
+        "math": {
+          "score": 48.1,
+          "rank": 15
+        },
+        "knowledge_qa": {
+          "score": 65.9,
+          "rank": 12
+        },
+        "instruction_following": {
+          "score": 81.9,
+          "rank": 4
+        },
+        "long_context": {
+          "score": 80,
+          "rank": 2
+        }
+      },
+      "context": {
+        "max_context_tokens": 1047576,
+        "max_output_tokens": 32768
+      },
+      "cost": {
+        "input_per_million_usd": 2,
+        "output_per_million_usd": 8,
+        "blended_per_million_usd": 3.5,
+        "cost_efficiency": 18.34
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 23,
+      "model_name": "Gemini 3.5 Flash",
+      "model_id": "gemini-3.5-flash",
+      "vendor": "google",
+      "release_date": "2026-05-19",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "composite": {
+        "score": 56,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": null,
+          "rank": null
+        },
+        "coding": {
+          "score": 56,
+          "rank": 15
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1048576,
+        "max_output_tokens": 65536
+      },
+      "cost": {
+        "input_per_million_usd": 1.5,
+        "output_per_million_usd": 9,
+        "blended_per_million_usd": 3.375,
+        "cost_efficiency": 16.59
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 24,
+      "model_name": "gpt-4.1-mini-2025-04-14",
+      "model_id": "gpt-4.1-mini",
+      "vendor": "openai",
+      "release_date": "2025-04-14",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 55.9,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 65,
+          "rank": 17
+        },
+        "coding": {
+          "score": 23.6,
+          "rank": 25
+        },
+        "math": {
+          "score": 49.6,
+          "rank": 14
+        },
+        "knowledge_qa": {
+          "score": 87.5,
+          "rank": 3
+        },
+        "instruction_following": {
+          "score": 76.1,
+          "rank": 9
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1047576,
+        "max_output_tokens": 32768
+      },
+      "cost": {
+        "input_per_million_usd": 0.4,
+        "output_per_million_usd": 1.6,
+        "blended_per_million_usd": 0.7,
+        "cost_efficiency": 79.86
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 25,
+      "model_name": "gpt-4.1-nano-2025-04-14",
+      "model_id": "gpt-4.1-nano",
+      "vendor": "openai",
+      "release_date": "2025-04-14",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 54.7,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 50.3,
+          "rank": 23
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": 29.4,
+          "rank": 21
+        },
+        "knowledge_qa": {
+          "score": 80.1,
+          "rank": 7
+        },
+        "instruction_following": {
+          "score": 65.8,
+          "rank": 14
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 1047576,
+        "max_output_tokens": 32768
+      },
+      "cost": {
+        "input_per_million_usd": 0.1,
+        "output_per_million_usd": 0.4,
+        "blended_per_million_usd": 0.175,
+        "cost_efficiency": 312.57
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 26,
+      "model_name": "Alibaba Qwen2.5 Coder 32B Instruct",
+      "model_id": "qwen2.5-coder-32b-instruct",
+      "vendor": "alibaba",
+      "release_date": "2024-11-12",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 52.3,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 35,
+          "rank": 27
+        },
+        "coding": {
+          "score": 72,
+          "rank": 11
+        },
+        "math": {
+          "score": 45,
+          "rank": 16
+        },
+        "knowledge_qa": {
+          "score": 55,
+          "rank": 15
+        },
+        "instruction_following": {
+          "score": 60,
+          "rank": 15
+        },
+        "long_context": {
+          "score": 45,
+          "rank": 9
+        }
+      },
+      "context": {
+        "max_context_tokens": 32768,
+        "max_output_tokens": 8192
+      },
+      "cost": {
+        "input_per_million_usd": 0.8,
+        "output_per_million_usd": 0.8,
+        "blended_per_million_usd": 0.8,
+        "cost_efficiency": 65.37
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 27,
+      "model_name": "gpt-4o-2024-08-06",
+      "model_id": "gpt-4o",
+      "vendor": "openai",
+      "release_date": "2024-08-06",
+      "weights_access": "closed",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 51.6,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 60.3,
+          "rank": 20
+        },
+        "coding": {
+          "score": 33.2,
+          "rank": 23
+        },
+        "math": {
+          "score": 44.5,
+          "rank": 17
+        },
+        "knowledge_qa": {
+          "score": 62,
+          "rank": 13
+        },
+        "instruction_following": {
+          "score": 70.6,
+          "rank": 11
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 128000,
+        "max_output_tokens": 16384
+      },
+      "cost": {
+        "input_per_million_usd": 2.5,
+        "output_per_million_usd": 10,
+        "blended_per_million_usd": 4.375,
+        "cost_efficiency": 11.79
+      },
+      "confidence": "verified"
+    },
+    {
+      "rank": 28,
+      "model_name": "Cohere Command R+ (08-2024)",
+      "model_id": "command-r-plus",
+      "vendor": "cohere",
+      "release_date": "2024-08-30",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 48,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 45,
+          "rank": 24
+        },
+        "coding": {
+          "score": 40,
+          "rank": 21
+        },
+        "math": {
+          "score": 35,
+          "rank": 20
+        },
+        "knowledge_qa": {
+          "score": 70,
+          "rank": 10
+        },
+        "instruction_following": {
+          "score": 55,
+          "rank": 17
+        },
+        "long_context": {
+          "score": 55,
+          "rank": 6
+        }
+      },
+      "context": {
+        "max_context_tokens": 128000,
+        "max_output_tokens": 4096
+      },
+      "cost": {
+        "input_per_million_usd": 2.5,
+        "output_per_million_usd": 10,
+        "blended_per_million_usd": 4.375,
+        "cost_efficiency": 10.97
+      },
+      "confidence": "estimated"
+    },
+    {
+      "rank": 29,
+      "model_name": "Google Gemma 2 9B Instruct",
+      "model_id": "gemma2-9b-it",
+      "vendor": "google",
+      "release_date": "2024-06-27",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 45.7,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 40,
+          "rank": 26
+        },
+        "coding": {
+          "score": 40,
+          "rank": 20
+        },
+        "math": {
+          "score": 40,
+          "rank": 19
+        },
+        "knowledge_qa": {
+          "score": 71,
+          "rank": 9
+        },
+        "instruction_following": {
+          "score": 70,
+          "rank": 12
+        },
+        "long_context": {
+          "score": 20,
+          "rank": 10
+        }
+      },
+      "context": {
+        "max_context_tokens": 8192,
+        "max_output_tokens": 8192
+      },
+      "cost": {
+        "input_per_million_usd": 0.2,
+        "output_per_million_usd": 0.2,
+        "blended_per_million_usd": 0.2,
+        "cost_efficiency": 228.5
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 30,
+      "model_name": "Meta Llama 3.1 8B Instruct",
+      "model_id": "llama-3.1-8b-instant",
+      "vendor": "meta",
+      "release_date": "2024-07-23",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 45.3,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 30,
+          "rank": 29
+        },
+        "coding": {
+          "score": 35,
+          "rank": 22
+        },
+        "math": {
+          "score": 43,
+          "rank": 18
+        },
+        "knowledge_qa": {
+          "score": 68,
+          "rank": 11
+        },
+        "instruction_following": {
+          "score": 79,
+          "rank": 8
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 131072,
+        "max_output_tokens": 8192
+      },
+      "cost": {
+        "input_per_million_usd": 0.05,
+        "output_per_million_usd": 0.08,
+        "blended_per_million_usd": 0.058,
+        "cost_efficiency": 781.03
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 31,
+      "model_name": "Codestral 2508",
+      "model_id": "codestral-latest",
+      "vendor": "mistral",
+      "release_date": "2025-08-01",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 45,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": null,
+          "rank": null
+        },
+        "coding": {
+          "score": 45,
+          "rank": 19
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 256000,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 0.3,
+        "output_per_million_usd": 0.9,
+        "blended_per_million_usd": 0.45,
+        "cost_efficiency": 100
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 32,
+      "model_name": "Mistral Small 4 (mistral-small-2603)",
+      "model_id": "mistral-small-latest",
+      "vendor": "mistral",
+      "release_date": "2026-03-16",
+      "weights_access": "open",
+      "modality": [
+        "text",
+        "image"
+      ],
+      "composite": {
+        "score": 42,
+        "partial": true
+      },
+      "categories": {
+        "reasoning": {
+          "score": 42,
+          "rank": 25
+        },
+        "coding": {
+          "score": null,
+          "rank": null
+        },
+        "math": {
+          "score": null,
+          "rank": null
+        },
+        "knowledge_qa": {
+          "score": null,
+          "rank": null
+        },
+        "instruction_following": {
+          "score": null,
+          "rank": null
+        },
+        "long_context": {
+          "score": null,
+          "rank": null
+        }
+      },
+      "context": {
+        "max_context_tokens": 262144,
+        "max_output_tokens": null
+      },
+      "cost": {
+        "input_per_million_usd": 0.15,
+        "output_per_million_usd": 0.6,
+        "blended_per_million_usd": 0.262,
+        "cost_efficiency": 160.31
+      },
+      "confidence": "mixed"
+    },
+    {
+      "rank": 33,
+      "model_name": "Cohere Command R (08-2024)",
+      "model_id": "command-r",
+      "vendor": "cohere",
+      "release_date": "2024-08-30",
+      "weights_access": "open",
+      "modality": [
+        "text"
+      ],
+      "composite": {
+        "score": 39,
+        "partial": false
+      },
+      "categories": {
+        "reasoning": {
+          "score": 35,
+          "rank": 28
+        },
+        "coding": {
+          "score": 30,
+          "rank": 24
+        },
+        "math": {
+          "score": 28,
+          "rank": 22
+        },
+        "knowledge_qa": {
+          "score": 60,
+          "rank": 14
+        },
+        "instruction_following": {
+          "score": 45,
+          "rank": 18
+        },
+        "long_context": {
+          "score": 50,
+          "rank": 8
+        }
+      },
+      "context": {
+        "max_context_tokens": 128000,
+        "max_output_tokens": 4096
+      },
+      "cost": {
+        "input_per_million_usd": 0.15,
+        "output_per_million_usd": 0.6,
+        "blended_per_million_usd": 0.262,
+        "cost_efficiency": 148.85
+      },
+      "confidence": "estimated"
+    }
+  ],
+  "rankings": {
+    "by_composite": [
+      "claude-opus-4-8",
+      "Gemini 3.1 Pro Preview",
+      "grok-4-0709",
+      "grok-3-mini",
+      "DeepSeek-V3.2-Exp",
+      "grok-3",
+      "Gemini 3.1 Flash-Lite Preview",
+      "o3-2025-04-16",
+      "Gemini 3.6 Flash",
+      "o4-mini-2025-04-16",
+      "claude-haiku-4-5-20251001",
+      "Mistral Medium 3.5",
+      "DeepSeek-R1-0528",
+      "claude-sonnet-5",
+      "Gemini 3.5 Flash-Lite",
+      "Ministral 3 8B (ministral-8b-2512)",
+      "Mistral Large 3 (mistral-large-2512)",
+      "Meta Llama 3.1 405B Instruct",
+      "gpt-4o-mini-2024-07-18",
+      "Meta Llama 3.3 70B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "gpt-4.1-2025-04-14",
+      "Gemini 3.5 Flash",
+      "gpt-4.1-mini-2025-04-14",
+      "gpt-4.1-nano-2025-04-14",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "gpt-4o-2024-08-06",
+      "Cohere Command R+ (08-2024)",
+      "Google Gemma 2 9B Instruct",
+      "Meta Llama 3.1 8B Instruct",
+      "Codestral 2508",
+      "Mistral Small 4 (mistral-small-2603)",
+      "Cohere Command R (08-2024)"
+    ],
+    "by_reasoning": [
+      "Gemini 3.1 Pro Preview",
+      "claude-opus-4-8",
+      "Gemini 3.6 Flash",
+      "grok-4-0709",
+      "grok-3-mini",
+      "DeepSeek-V3.2-Exp",
+      "o3-2025-04-16",
+      "DeepSeek-R1-0528",
+      "grok-3",
+      "Gemini 3.1 Flash-Lite Preview",
+      "o4-mini-2025-04-16",
+      "claude-sonnet-5",
+      "claude-haiku-4-5-20251001",
+      "gpt-4.1-2025-04-14",
+      "Mistral Large 3 (mistral-large-2512)",
+      "Ministral 3 8B (ministral-8b-2512)",
+      "gpt-4.1-mini-2025-04-14",
+      "gpt-4o-mini-2024-07-18",
+      "Meta Llama 3.1 405B Instruct",
+      "gpt-4o-2024-08-06",
+      "Meta Llama 3.3 70B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "gpt-4.1-nano-2025-04-14",
+      "Cohere Command R+ (08-2024)",
+      "Mistral Small 4 (mistral-small-2603)",
+      "Google Gemma 2 9B Instruct",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "Cohere Command R (08-2024)",
+      "Meta Llama 3.1 8B Instruct"
+    ],
+    "by_coding": [
+      "claude-opus-4-8",
+      "Gemini 3.1 Pro Preview",
+      "grok-3-mini",
+      "DeepSeek-V3.2-Exp",
+      "grok-4-0709",
+      "grok-3",
+      "Mistral Medium 3.5",
+      "o4-mini-2025-04-16",
+      "o3-2025-04-16",
+      "claude-sonnet-5",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "claude-haiku-4-5-20251001",
+      "DeepSeek-R1-0528",
+      "Meta Llama 3.1 405B Instruct",
+      "Gemini 3.5 Flash",
+      "Meta Llama 3.3 70B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "gpt-4.1-2025-04-14",
+      "Codestral 2508",
+      "Cohere Command R+ (08-2024)",
+      "Google Gemma 2 9B Instruct",
+      "Meta Llama 3.1 8B Instruct",
+      "gpt-4o-2024-08-06",
+      "Cohere Command R (08-2024)",
+      "gpt-4.1-mini-2025-04-14"
+    ],
+    "by_math": [
+      "claude-haiku-4-5-20251001",
+      "grok-3-mini",
+      "grok-4-0709",
+      "o4-mini-2025-04-16",
+      "grok-3",
+      "DeepSeek-V3.2-Exp",
+      "o3-2025-04-16",
+      "DeepSeek-R1-0528",
+      "Alibaba Qwen2.5 72B Instruct",
+      "Ministral 3 8B (ministral-8b-2512)",
+      "Meta Llama 3.3 70B Instruct",
+      "Meta Llama 3.1 405B Instruct",
+      "gpt-4o-mini-2024-07-18",
+      "gpt-4.1-mini-2025-04-14",
+      "gpt-4.1-2025-04-14",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "gpt-4o-2024-08-06",
+      "Meta Llama 3.1 8B Instruct",
+      "Google Gemma 2 9B Instruct",
+      "Cohere Command R+ (08-2024)",
+      "gpt-4.1-nano-2025-04-14",
+      "Cohere Command R (08-2024)"
+    ],
+    "by_knowledge_qa": [
+      "Gemini 3.1 Pro Preview",
+      "claude-haiku-4-5-20251001",
+      "gpt-4.1-mini-2025-04-14",
+      "Meta Llama 3.1 405B Instruct",
+      "gpt-4o-mini-2024-07-18",
+      "Alibaba Qwen2.5 72B Instruct",
+      "gpt-4.1-nano-2025-04-14",
+      "Meta Llama 3.3 70B Instruct",
+      "Google Gemma 2 9B Instruct",
+      "Cohere Command R+ (08-2024)",
+      "Meta Llama 3.1 8B Instruct",
+      "gpt-4.1-2025-04-14",
+      "gpt-4o-2024-08-06",
+      "Cohere Command R (08-2024)",
+      "Alibaba Qwen2.5 Coder 32B Instruct"
+    ],
+    "by_instruction_following": [
+      "Meta Llama 3.3 70B Instruct",
+      "Meta Llama 3.1 405B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "gpt-4.1-2025-04-14",
+      "o3-2025-04-16",
+      "Gemini 3.1 Pro Preview",
+      "Gemini 3.6 Flash",
+      "Meta Llama 3.1 8B Instruct",
+      "gpt-4.1-mini-2025-04-14",
+      "o4-mini-2025-04-16",
+      "gpt-4o-2024-08-06",
+      "Google Gemma 2 9B Instruct",
+      "Mistral Large 3 (mistral-large-2512)",
+      "gpt-4.1-nano-2025-04-14",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "gpt-4o-mini-2024-07-18",
+      "Cohere Command R+ (08-2024)",
+      "Cohere Command R (08-2024)"
+    ],
+    "by_long_context": [
+      "Gemini 3.1 Pro Preview",
+      "gpt-4.1-2025-04-14",
+      "Gemini 3.5 Flash-Lite",
+      "Meta Llama 3.1 405B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "Cohere Command R+ (08-2024)",
+      "Gemini 3.6 Flash",
+      "Cohere Command R (08-2024)",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "Google Gemma 2 9B Instruct"
+    ],
+    "by_cost_efficiency": [
+      "Meta Llama 3.1 8B Instruct",
+      "DeepSeek-V3.2-Exp",
+      "Ministral 3 8B (ministral-8b-2512)",
+      "DeepSeek-R1-0528",
+      "gpt-4.1-nano-2025-04-14",
+      "gpt-4o-mini-2024-07-18",
+      "grok-3-mini",
+      "Google Gemma 2 9B Instruct",
+      "Mistral Small 4 (mistral-small-2603)",
+      "Cohere Command R (08-2024)",
+      "Gemini 3.1 Flash-Lite Preview",
+      "Meta Llama 3.3 70B Instruct",
+      "Codestral 2508",
+      "Mistral Large 3 (mistral-large-2512)",
+      "Gemini 3.5 Flash-Lite",
+      "gpt-4.1-mini-2025-04-14",
+      "Alibaba Qwen2.5 Coder 32B Instruct",
+      "Alibaba Qwen2.5 72B Instruct",
+      "o4-mini-2025-04-16",
+      "claude-haiku-4-5-20251001",
+      "Gemini 3.6 Flash",
+      "Mistral Medium 3.5",
+      "o3-2025-04-16",
+      "Meta Llama 3.1 405B Instruct",
+      "Gemini 3.1 Pro Preview",
+      "gpt-4.1-2025-04-14",
+      "Gemini 3.5 Flash",
+      "grok-4-0709",
+      "grok-3",
+      "claude-sonnet-5",
+      "gpt-4o-2024-08-06",
+      "Cohere Command R+ (08-2024)",
+      "claude-opus-4-8"
+    ]
+  }
+}

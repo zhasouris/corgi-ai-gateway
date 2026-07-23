@@ -1,7 +1,7 @@
 # ADR 0010 — Per-Task Model Competency Scores
 
-- **Status:** Proposed (plan; not yet implemented)
-- **Date:** 2026-07-22
+- **Status:** Accepted (implemented 2026-07-23)
+- **Date:** 2026-07-22 (implemented 2026-07-23)
 - **Context repo:** `corgi-ai-gateway`
 
 ## Context
@@ -131,13 +131,18 @@ not merely an eval-harness concern.
 
 ## Follow-ups / TODO
 
-- [ ] Fix `taskType` detection in the heuristic provider (**blocking**, TODO item 4).
-- [ ] `config/competency.yaml` schema + Zod validation; fail fast on a missing `source`/`updated`.
-- [ ] Agree the task taxonomy. It must match the classifier's `taskType` values exactly, or
-      entries silently never match.
-- [ ] Refine `taskTypeRule` to the competency-or-tier form; mark `fixedScale`.
-- [ ] Seed competency for the highest-traffic models only — resist filling the matrix.
-- [ ] Before/after eval run, since this changes scoring for every model (see ADR 0003).
+- [x] Fix `taskType` detection in the heuristic provider (**was blocking**) — realigned to the
+      benchmark taxonomy; coding/reasoning/math/knowledge detection strengthened (2026-07-23).
+- [x] `config/competency.yaml` schema + Zod validation; fail fast on a missing `source`/`updated`
+      and on unknown model id / task.
+- [x] Agree the task taxonomy — the classifier `taskType` values now **are** the benchmark
+      categories (`reasoning, coding, math, knowledge_qa, instruction_following, long_context`,
+      + `conversation`), so competency maps 1:1.
+- [x] Refine `taskTypeRule` to the competency-or-tier form; marked `fixedScale`.
+- [x] Seed competency — 33 models seeded from web benchmarks; see
+      [docs/process/model-capability-scoring.md](../process/model-capability-scoring.md).
+- [x] Before/after check — gold suite (fixture, no competency) unchanged; live-catalog probe
+      confirms competency drives per-task selection.
 - [ ] Surface competency and its provenance in `/v1/router/explain` and the demo, so a
       decision can be traced to the number that drove it.
 - [ ] Telemetry correction loop: outcome labels → per-task scores (ADR 0005).

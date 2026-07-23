@@ -6,12 +6,13 @@
  * magnitude would be destroyed by min-max (see FeatureRule.fixedScale).
  */
 
-import { supports, type FeatureScore, type ModelDescriptor } from "../../types.js";
+import { COMPETENCY_TASKS, supports, type FeatureScore, type ModelDescriptor } from "../../types.js";
 import { clamp01, type FeatureRule } from "./types.js";
 
 const LARGE_PROMPT_TOKENS = 128_000;
 const LARGE_OUTPUT_TOKENS = 8_192;
-const HARD_TASKS = new Set(["coding", "math", "reasoning", "analysis"]);
+/** Tier normalization denominator for the competency fallback (ADR 0010). */
+const MAX_TIER = 6;
 const LOCAL_PROVIDERS = new Set(["ollama", "local", "self_hosted"]);
 
 const f = (name: string, value: number, raw?: FeatureScore["raw"], metadata?: Record<string, unknown>): FeatureScore => ({
@@ -71,12 +72,21 @@ export const reasoningDepthRule: FeatureRule = {
 
 export const taskTypeRule: FeatureRule = {
   name: "task_type",
+  // Competency is an ABSOLUTE judgement (0.95 = "excellent at this"), not a
+  // best-of-set ranking, so it must not be min-max rescaled (ADR 0010, 0003).
+  fixedScale: true,
   extract(_req, analysis) {
     const task = analysis.classifier.taskType;
-    return f("task_type", HARD_TASKS.has(task) ? 1 : 0, task, { task });
+    // value gates the rule: 1 for a benchmark-eligible task, 0 for the generic
+    // `conversation` default (which stays neutral, as under the old tier×hard rule).
+    return f("task_type", COMPETENCY_TASKS.has(task) ? 1 : 0, task, { task });
   },
   scoreModel(model, signal) {
-    return model.tier * signal.value;
+    if (!signal.value) return 0;
+    const task = String(signal.raw);
+    // Seeded competency for this task if we have it, else a tier-derived fallback
+    // so a model with no competency data is treated exactly as before (by tier).
+    return model.competency?.[task] ?? model.tier / MAX_TIER;
   },
 };
 

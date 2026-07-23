@@ -1,0 +1,161 @@
+# Per-task model competency (ADR 0010). Benchmark-seeded quality signal that
+# overrides the tier fallback in the task_type scoring rule. SPARSE: only tasks
+# with data appear; a missing (model,task) falls back to tier/MAX_TIER.
+# Tasks are the router's realigned taskType values (= benchmark categories).
+# Scores are 0..1 (benchmark category score / 100). Regenerate via
+# docs/prompts/model-capability-ranking.md -> docs/process/model-scores.json.
+# `source`/`updated` are REQUIRED on every entry (ADR 0010).
+
+models:
+  claude-opus-4-8:
+    reasoning: { score: 0.936, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.886, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gemini-3.1-pro-preview:
+    reasoning: { score: 0.94, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.81, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.93, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.81, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.85, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  grok-4:
+    reasoning: { score: 0.873, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.794, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.94, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  grok-3-mini:
+    reasoning: { score: 0.84, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.804, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.958, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  deepseek-chat:
+    reasoning: { score: 0.837, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.803, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.931, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  grok-3:
+    reasoning: { score: 0.823, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.794, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.933, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gemini-3.1-flash-lite:
+    reasoning: { score: 0.82, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  o3:
+    reasoning: { score: 0.833, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    coding: { score: 0.75, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.916, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.818, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  gemini-3.6-flash:
+    reasoning: { score: 0.93, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.81, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.54, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  o4-mini:
+    reasoning: { score: 0.814, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    coding: { score: 0.77, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.934, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.706, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  claude-haiku-4-5:
+    reasoning: { score: 0.767, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.677, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.963, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.908, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  mistral-medium-latest:
+    coding: { score: 0.78, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  deepseek-reasoner:
+    reasoning: { score: 0.83, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.655, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.875, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  claude-sonnet-5:
+    reasoning: { score: 0.78, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.727, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gemini-3.5-flash-lite:
+    long_context: { score: 0.72, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  ministral-8b-latest:
+    reasoning: { score: 0.668, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.787, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  mistral-large-latest:
+    reasoning: { score: 0.68, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.697, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  meta-llama-3.1-405b-instruct-turbo:
+    reasoning: { score: 0.62, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.58, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.74, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.82, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.89, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.6, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gpt-4o-mini:
+    reasoning: { score: 0.631, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.702, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    knowledge_qa: { score: 0.82, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.574, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  llama-3.3-70b-versatile:
+    reasoning: { score: 0.6, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.77, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.78, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.92, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  qwen2.5-72b-instruct-turbo:
+    reasoning: { score: 0.6, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.83, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.82, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.84, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gpt-4.1:
+    reasoning: { score: 0.735, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.502, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.481, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.659, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.819, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.8, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gemini-3.5-flash:
+    coding: { score: 0.56, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gpt-4.1-mini:
+    reasoning: { score: 0.65, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    coding: { score: 0.236, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.496, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    knowledge_qa: { score: 0.875, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.761, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  gpt-4.1-nano:
+    reasoning: { score: 0.503, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.294, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    knowledge_qa: { score: 0.801, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.658, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  qwen2.5-coder-32b-instruct:
+    reasoning: { score: 0.35, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.72, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.45, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.6, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.45, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  gpt-4o:
+    reasoning: { score: 0.603, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    coding: { score: 0.332, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    math: { score: 0.445, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    knowledge_qa: { score: 0.62, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+    instruction_following: { score: 0.706, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: verified }
+  command-r-plus:
+    reasoning: { score: 0.45, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    coding: { score: 0.4, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    math: { score: 0.35, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    knowledge_qa: { score: 0.7, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    instruction_following: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    long_context: { score: 0.55, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+  gemma2-9b-it:
+    reasoning: { score: 0.4, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.4, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.4, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.71, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.7, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    long_context: { score: 0.2, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  llama-3.1-8b-instant:
+    reasoning: { score: 0.3, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    coding: { score: 0.35, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    math: { score: 0.43, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    knowledge_qa: { score: 0.68, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+    instruction_following: { score: 0.79, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  codestral-latest:
+    coding: { score: 0.45, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  mistral-small-latest:
+    reasoning: { score: 0.42, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: mixed }
+  command-r:
+    reasoning: { score: 0.35, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    coding: { score: 0.3, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    math: { score: 0.28, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    knowledge_qa: { score: 0.6, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    instruction_following: { score: 0.45, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }
+    long_context: { score: 0.5, source: "model-scores.json (web 2026-07-23)", updated: 2026-07-23, confidence: estimated }

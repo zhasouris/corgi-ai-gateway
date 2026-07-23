@@ -41,9 +41,14 @@ export function promptText(req: RoutingRequest, maxChars: number): string {
 const CLASSIFIER_SYSTEM =
   "You are a routing classifier. Analyze the user's request and respond with a " +
   "single JSON object and nothing else, with keys: complexity (0..1 float), " +
-  "expected_output_tokens (int), reasoning_depth (0..1 float), task_type (one of: " +
-  "coding, math, reasoning, analysis, summarization, extraction, creative, " +
-  "translation, conversation), data_sensitivity (0..1 float). No explanations.";
+  "expected_output_tokens (int), reasoning_depth (0..1 float), task_type, and " +
+  "data_sensitivity (0..1 float). task_type is one of: reasoning (multi-step " +
+  "logic, analysis, planning), coding (write/debug/explain code), math " +
+  "(calculation, proofs, quantitative), knowledge_qa (factual Q&A, retrieval, " +
+  "extraction, summarization of given text), instruction_following (transform/" +
+  "format/obey precise constraints), long_context (reasoning over a very large " +
+  "provided document), conversation (chat, greetings, open-ended, anything " +
+  "trivial). Pick the single best fit. No explanations.";
 
 function parseClassifier(raw: string): ClassifierResult {
   const data = JSON.parse(raw) as Record<string, unknown>;
@@ -107,15 +112,32 @@ const HARD = [
   "prove", "proof", "algorithm", "optimize", "race condition", "concurren",
   "architect", "refactor", "debug", "derive", "theorem", "complexity",
   "analyze", "analysis", "o(n", "distributed", "trade-off", "tradeoff",
+  "critique", "evaluate", "failure mode",
 ];
 const EASY = [
   "rephrase", "summar", "translate", "hello", "greeting", "what is", "list ",
   "format", "typo", "spelling", "capital of", "say hi",
 ];
-const CODE = ["code", "function", "typescript", "python", "bug", "compile", "stack trace", "regex", "sql", "api"];
-const MATH = ["integral", "equation", "derivative", "probability", "matrix", "calculus", "solve for", "prime"];
-const CREATIVE = ["poem", "haiku", "story", "song", "creative", "imagine"];
-const REASON = ["why", "step by step", "reason", "plan", "prove", "explain how", "strategy"];
+// task_type keyword sets — the realigned taxonomy (ADR 0010), checked in the
+// priority order used in analyze() below.
+const LONGCTX = ["document below", "following document", "following article", "transcript",
+  "entire codebase", "long document", "text below", "passage below", "article below"];
+// Leading spaces on short tokens avoid substring false positives
+// (e.g. "api" in "capital", "rust" in "trust", "prove" in "improve").
+const CODE = ["code", "function", "typescript", "python", "java", " rust", "c++",
+  "debug", "compile", "stack trace", "regex", " sql", " api", "class ", "unit test",
+  "lru cache", "thread-safe", "implement a", "implement the", "programm"];
+const MATH = ["integral", "equation", "derivative", "probability", "matrix", "calculus",
+  "solve for", "theorem", "proof", " prove ", "polynomial", "factorial",
+  "arithmetic", "geometry"];
+const REASON = ["why", "step by step", "reason", "plan", "explain how", "strategy",
+  "analyze", "analysis", "critique", "evaluate", "compare", "trade-off", "tradeoff",
+  "architecture", "distributed", "failure mode", "derive", "assess", "diagnose"];
+const KNOWLEDGE = ["what is", "what are", "who is", "who was", "when did", "where is",
+  "define", "definition", "list ", "summar", "extract", "how many", "capital of",
+  "tell me about", "facts about"];
+const FORMAT = ["reformat", "format as", "convert to", "rewrite", "translate", "in json",
+  "as a table", "bullet point", "follow these", "output only", "respond with", "in the format"];
 const LONG = ["write", "essay", "generate", "draft", "implement", "explain", "guide", "tutorial", "report"];
 const SHORT = ["yes or no", "classify", "which", "extract", "label", "one word", "true or false"];
 const SENSITIVE = ["password", "ssn", "social security", "credit card", "medical", "patient", "confidential", "api key", "private key"];
@@ -141,13 +163,20 @@ export class HeuristicSignalProvider implements SignalProvider {
     const easyHits = EASY.filter((k) => t.includes(k)).length;
     let complexity = clamp01(0.25 + 0.15 * hardHits - 0.2 * easyHits + Math.min(0.2, len / 8000));
 
+    // Priority order matters: a long-document task overrides its inner task,
+    // and specific hard tasks (code/math/reasoning) are detected before the
+    // broad knowledge/format buckets so they are not swallowed by them.
     let taskType = "conversation";
-    if (has(t, CODE)) taskType = "coding";
+    if (has(t, LONGCTX)) taskType = "long_context";
+    else if (has(t, CODE)) taskType = "coding";
     else if (has(t, MATH)) taskType = "math";
-    else if (has(t, CREATIVE)) taskType = "creative";
-    else if (has(t, EASY)) taskType = "summarization";
+    else if (has(t, REASON)) taskType = "reasoning";
+    else if (has(t, KNOWLEDGE)) taskType = "knowledge_qa";
+    else if (has(t, FORMAT)) taskType = "instruction_following";
 
-    if (taskType === "coding" || taskType === "math") complexity = clamp01(complexity + 0.1);
+    if (taskType === "coding" || taskType === "math" || taskType === "reasoning") {
+      complexity = clamp01(complexity + 0.1);
+    }
 
     const reasoningDepth = has(t, REASON) ? clamp01(0.3 + complexity * 0.5) : complexity * 0.3;
 

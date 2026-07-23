@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { CAPABILITIES, STRATEGIES, type Capability, type ModelDescriptor } from "./types.js";
+import { CAPABILITIES, STRATEGIES, TASK_TYPES, type Capability, type ModelDescriptor } from "./types.js";
 
 // Resolved at call time (not import time) so tests can point at fixtures.
 function configDir(): string {
@@ -110,6 +110,18 @@ const modelSchema = z.object({
 
 const catalogSchema = z.object({ models: z.array(modelSchema).min(1) });
 
+// Per-task competency (ADR 0010). Optional, sparse, keyed by model id then task.
+// `source` and `updated` are required so a number's provenance is never lost.
+const competencyEntrySchema = z.object({
+  score: z.number().min(0).max(1),
+  source: z.string().min(1),
+  updated: z.union([z.string(), z.date()]),
+  confidence: z.string().optional(),
+});
+const competencySchema = z.object({
+  models: z.record(z.record(competencyEntrySchema)).default({}),
+});
+
 export type ServerConfig = z.infer<typeof serverSchema>;
 
 export interface AppConfig {
@@ -182,7 +194,22 @@ function loadYaml(name: string): unknown {
   return parseYaml(text);
 }
 
-function toDescriptor(m: z.infer<typeof modelSchema>): ModelDescriptor {
+/** Like loadYaml but returns null when the file is absent (optional configs). */
+function loadYamlOptional(name: string): unknown {
+  const path = join(configDir(), name);
+  let text: string;
+  try {
+    text = readFileSync(path, "utf-8");
+  } catch {
+    return null;
+  }
+  return parseYaml(text);
+}
+
+function toDescriptor(
+  m: z.infer<typeof modelSchema>,
+  competency?: Record<string, number>,
+): ModelDescriptor {
   return {
     id: m.id,
     provider: m.provider,
@@ -194,6 +221,7 @@ function toDescriptor(m: z.infer<typeof modelSchema>): ModelDescriptor {
     avgLatencyMs: m.avg_latency_ms,
     capabilities: new Set<Capability>(m.capabilities),
     apiKeyEnv: m.api_key_env,
+    competency,
   };
 }
 
@@ -226,7 +254,27 @@ export function getConfig(): AppConfig {
     throw new Error(`classifier provider '${server.classifier.provider}' is not configured`);
   }
 
-  const catalog = catalogRaw.models.map(toDescriptor);
+  // Competency (ADR 0010) — optional, sparse. Validate ids/tasks so a typo fails
+  // fast rather than silently never matching.
+  const competencyRaw = competencySchema.parse(loadYamlOptional("competency.yaml") ?? { models: {} });
+  const catalogIds = new Set(catalogRaw.models.map((m) => m.id));
+  const validTasks = new Set<string>(TASK_TYPES);
+  const competencyByModel: Record<string, Record<string, number>> = {};
+  for (const [modelId, tasks] of Object.entries(competencyRaw.models)) {
+    if (!catalogIds.has(modelId)) {
+      throw new Error(`competency.yaml references unknown model id '${modelId}'`);
+    }
+    const scores: Record<string, number> = {};
+    for (const [task, entry] of Object.entries(tasks)) {
+      if (!validTasks.has(task)) {
+        throw new Error(`competency.yaml: model '${modelId}' has unknown task '${task}'`);
+      }
+      scores[task] = entry.score;
+    }
+    competencyByModel[modelId] = scores;
+  }
+
+  const catalog = catalogRaw.models.map((m) => toDescriptor(m, competencyByModel[m.id]));
   const byId = new Map(catalog.map((m) => [m.id, m]));
 
   cached = {

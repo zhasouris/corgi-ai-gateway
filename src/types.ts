@@ -22,6 +22,28 @@ export const CAPABILITIES = [
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
+/**
+ * Task taxonomy (ADR 0010). Deliberately aligned to the benchmark categories the
+ * competency layer is seeded from, so a competency score maps 1:1 to a detected
+ * task. `conversation` is the generic default for trivial/chat prompts and has
+ * no benchmark — it falls back to tier in scoring.
+ */
+export const TASK_TYPES = [
+  "reasoning",
+  "coding",
+  "math",
+  "knowledge_qa",
+  "instruction_following",
+  "long_context",
+  "conversation",
+] as const;
+export type TaskType = (typeof TASK_TYPES)[number];
+
+/** Tasks with benchmark-backed competency data (everything but the generic default). */
+export const COMPETENCY_TASKS = new Set<string>(
+  TASK_TYPES.filter((t) => t !== "conversation"),
+);
+
 /** Loose view of an OpenAI chat.completions request; forwarded unchanged
  *  except for `model` (testing invariant #14). */
 export interface ChatCompletionRequest {
@@ -117,6 +139,9 @@ export interface ModelDescriptor {
   /** Optional env var holding this model's own API key (for per-model billing);
    *  falls back to the provider default key when unset. */
   apiKeyEnv?: string;
+  /** Sparse per-task competency scores (0..1), keyed by task type (ADR 0010).
+   *  A missing task falls back to a tier-derived value in the task_type rule. */
+  competency?: Record<string, number>;
 }
 
 export function supports(model: ModelDescriptor, cap: Capability): boolean {
