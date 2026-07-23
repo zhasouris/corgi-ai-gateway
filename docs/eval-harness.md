@@ -79,7 +79,17 @@ npm run eval:baseline -- --base gpt-4.1-mini --dataset eval/datasets/curated.jso
 The base you choose sets the story: a **weak** default (`gpt-4.1-mini`) shows the router is
 cheaper *and* sharper almost everywhere; a **strong** default (`o3`) shows large savings with
 a small, *measured* accuracy give-up on hard prompts — the exact trade-off, made visible.
-A third lens (real LLM-judged accuracy on a sample) is a planned add, reusing `judge.ts`.
+
+A **third accuracy lens** validates the offline proxy against real outputs: `--judge N`
+generates the base and router answers for `N` sampled disagreements and has a judge decide,
+directionally — upgrades ask "did the stronger pick answer better?", downgrades ask "did the
+cheaper pick lose quality?". Spends; needs `OPENAI_API_KEY`.
+
+```bash
+npm run eval:baseline -- --base gpt-4.1-mini --judge 6 --judge-strategy value
+```
+
+Full design: [ADR 0018](decisions/0018-base-model-delta-kpis.md).
 
 ### Shadow comparison (the ADR 0006 gate)
 

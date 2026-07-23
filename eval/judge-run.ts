@@ -8,77 +8,21 @@
  * Requires OPENAI_API_KEY. Weak/strong/judge models are configurable via env.
  */
 
-import OpenAI from "openai";
-import { getConfig } from "../src/config.js";
 import { makeAnalyze } from "../src/core/analysis.js";
 import { Router } from "../src/core/router.js";
 import { HeuristicSignalProvider } from "../src/core/signal.js";
+import { getConfig } from "../src/config.js";
 import { isStrategy, type RoutingRequest, type Strategy } from "../src/types.js";
 import { loadDataset } from "./src/dataset.js";
-import {
-  classify,
-  deriveGroundTruth,
-  summarize,
-  type Judge,
-  type ModelCaller,
-  type Outcome,
-} from "./src/judge.js";
+import { classify, deriveGroundTruth, summarize, type Outcome } from "./src/judge.js";
+import { JUDGE_MODEL as JUDGE, openaiCaller, openaiJudge } from "./src/openai-judge.js";
 
 const WEAK = process.env.JUDGE_WEAK_MODEL ?? "gpt-4.1-nano";
 const STRONG = process.env.JUDGE_STRONG_MODEL ?? "gpt-4.1";
-const JUDGE = process.env.JUDGE_MODEL ?? "gpt-4.1-mini";
 const STRONG_TIER_THRESHOLD = Number(process.env.JUDGE_STRONG_TIER ?? 4);
 
-function client(): OpenAI {
-  const config = getConfig();
-  const provider = config.server.providers["openai"]!;
-  return new OpenAI({
-    baseURL: provider.base_url,
-    apiKey: config.providerApiKey("openai") ?? "missing",
-    maxRetries: 1,
-  });
-}
-
-const oa = client();
-
-const caller: ModelCaller = {
-  async complete(model, prompt) {
-    const r = await oa.chat.completions.create({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 400,
-      temperature: 0,
-    });
-    return r.choices[0]?.message?.content ?? "";
-  },
-};
-
-const judge: Judge = {
-  async strongBetter(prompt, weak, strong) {
-    const r = await oa.chat.completions.create({
-      model: JUDGE,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Compare two AI answers to the same prompt. Decide if Answer B is " +
-            "MEANINGFULLY better than Answer A — in correctness/completeness/" +
-            "usefulness, not just style. Respond with a single JSON object: " +
-            '{"strongBetter": boolean, "margin": number between 0 and 1}.',
-        },
-        { role: "user", content: `PROMPT:\n${prompt}\n\nAnswer A:\n${weak}\n\nAnswer B:\n${strong}` },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 150,
-      temperature: 0,
-    });
-    const data = JSON.parse(r.choices[0]?.message?.content ?? "{}") as {
-      strongBetter?: boolean;
-      margin?: number;
-    };
-    return { strongBetter: Boolean(data.strongBetter), margin: Number(data.margin ?? 0) };
-  },
-};
+const caller = openaiCaller();
+const judge = openaiJudge();
 
 function promptOf(request: { messages?: { content?: unknown }[] }): string {
   const c = request.messages?.[0]?.content;
