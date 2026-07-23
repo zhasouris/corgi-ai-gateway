@@ -30,10 +30,19 @@ request, decides which model best fits the work (best model, best value, or fast
 forwards to the right provider, and streams the response straight back. No client changes
 beyond the base URL.
 
-```
-your app ──(OpenAI SDK)──▶ corgi-ai-gateway ──▶ the right model, this time
-                                │
-                    detect → classify → filter → score → forward
+```mermaid
+flowchart LR
+    app["Your app<br/>(OpenAI SDK)"]
+    gw["🐕 corgi-ai-gateway"]
+    prov["33 models<br/>9 vendors"]
+    subgraph pipe["per-request routing"]
+        direction LR
+        d[detect] --> c[classify] --> f[filter] --> s[score] --> fwd[forward]
+    end
+    app -->|"request + X-Router-Strategy"| gw
+    gw --> pipe
+    pipe -->|"the right model, this time"| prov
+    prov -.->|"streamed back"| app
 ```
 
 > **About this project.** A self-hosted, production-shaped exploration of per-request LLM
@@ -160,8 +169,25 @@ the provider-translation layer.
 
 ## How it works
 
+```mermaid
+flowchart LR
+    req[request] --> det[detect] --> byp{bypass?}
+    byp -->|yes| fwd[forward]
+    byp -->|no| an[analyze] --> filt["filter<br/>(hard constraints)"]
+    filt --> q["capability<br/>score Q"] --> fr["frontier<br/>(top cluster)"] --> pick["pick per strategy<br/>best · value · fast"] --> fwd
 ```
-request ─▶ detect ─▶ (bypass?) ─▶ analyze ─▶ filter (hard constraints) ─▶ weighted score ─▶ forward
+
+The routing brain is **frontier-then-optimize** ([ADR 0017](docs/decisions/0017-frontier-then-optimize-strategies.md)):
+score capability first (no cost/latency in it), take the top cluster, then optimize one
+objective within it — so price and speed never drag down a genuinely-stronger model.
+
+```mermaid
+flowchart TD
+    p["prompt"] --> q["capability score Q<br/>complexity · reasoning · competency"]
+    q --> fr{{"top cluster / frontier<br/>within δ of the best Q"}}
+    fr --> best["best —<br/>cheapest of the top ties"]
+    fr --> value["value (default) —<br/>cheapest in the frontier"]
+    fr --> fast["fast —<br/>fastest in the frontier"]
 ```
 
 1. **Detect** deterministic facts (token count, vision/tools/audio, JSON mode).
