@@ -34,7 +34,7 @@ auth:
   issuer: "https://login.example.com/"   # AUTH_ISSUER — iss must match
   audience: "api://corgi-ai-gateway"     # AUTH_AUDIENCE — aud must match
   required_scope: ""                     # AUTH_REQUIRED_SCOPE — optional, e.g. router.invoke
-  jwks_uri: ""                           # AUTH_JWKS_URI — optional; else <issuer>/.well-known/jwks.json
+  jwks_uri: ""                           # AUTH_JWKS_URI — optional; else via <issuer>/.well-known/openid-configuration
 ```
 
 | Env var | Effect |

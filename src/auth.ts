@@ -22,11 +22,24 @@ import { logWarn } from "./logger.js";
  *  a local JWKS instead of fetching a remote one. */
 export type KeyResolver = JWTVerifyGetKey;
 
-function jwksUrl(auth: AppConfig["server"]["auth"]): string {
+/**
+ * Resolve the JWKS URL. An explicit `jwks_uri` wins; otherwise discover it the
+ * standard OIDC way — fetch `<issuer>/.well-known/openid-configuration` and read
+ * its `jwks_uri`. Providers don't share a fixed JWKS path (Entra uses
+ * `/discovery/v2.0/keys`, Auth0 `/.well-known/jwks.json`, …), so guessing one
+ * only works by luck; discovery is what makes issuer-alone config portable.
+ */
+async function discoverJwksUri(auth: AppConfig["server"]["auth"]): Promise<string> {
   if (auth.jwks_uri) return auth.jwks_uri;
   if (!auth.issuer) return "";
-  // Standard OIDC JWKS location relative to the issuer.
-  return `${auth.issuer.replace(/\/$/, "")}/.well-known/jwks.json`;
+  const base = auth.issuer.replace(/\/$/, "");
+  const res = await fetch(`${base}/.well-known/openid-configuration`);
+  if (!res.ok) {
+    throw new Error(`OIDC discovery returned ${res.status} for ${base}/.well-known/openid-configuration`);
+  }
+  const doc = (await res.json()) as { jwks_uri?: string };
+  if (!doc.jwks_uri) throw new Error(`no jwks_uri in the discovery document for ${base}`);
+  return doc.jwks_uri;
 }
 
 /**
@@ -64,20 +77,31 @@ function unauthorized(c: Context, detail: string): Response {
 export function makeAuth(config: AppConfig, resolver?: KeyResolver) {
   const auth = config.server.auth;
 
-  // Build the remote JWKS once; jose caches keys and refreshes on unknown kid.
-  let keys: KeyResolver | null = resolver ?? null;
-  if (!keys && auth.enabled) {
-    const url = jwksUrl(auth);
-    if (url) keys = createRemoteJWKSet(new URL(url));
+  // Resolve the JWKS lazily and once — discovery needs an async fetch, and jose
+  // then caches the keys and refreshes on an unknown kid. An injected resolver
+  // (tests) short-circuits discovery. On failure the cache is cleared so the
+  // next request retries rather than staying wedged.
+  let keysPromise: Promise<KeyResolver | null> | null = resolver ? Promise.resolve(resolver) : null;
+  function loadKeys(): Promise<KeyResolver | null> {
+    if (!keysPromise) {
+      keysPromise = discoverJwksUri(auth)
+        .then((url) => (url ? (createRemoteJWKSet(new URL(url)) as KeyResolver) : null))
+        .catch((err) => {
+          logWarn("jwks resolution failed", { reason: (err as Error).message });
+          keysPromise = null;
+          return null;
+        });
+    }
+    return keysPromise;
   }
 
   return async function requireAuth(c: Context, next: Next): Promise<Response | void> {
     if (!auth.enabled) return next();
 
-    // Fail closed: enabled but nothing to validate against.
-    if (!keys || !auth.issuer) {
-      return unauthorized(c, "authentication is not configured");
-    }
+    // Fail closed: enabled but no issuer means nothing can validate.
+    if (!auth.issuer) return unauthorized(c, "authentication is not configured");
+    const keys = await loadKeys();
+    if (!keys) return unauthorized(c, "authentication is not configured");
 
     const header = c.req.header("authorization") ?? "";
     if (!header.toLowerCase().startsWith("bearer ")) {
