@@ -53,7 +53,9 @@ your app ──(OpenAI SDK)──▶ llm-model-router ──▶ the right model,
   RouteLLM sidecar — all behind one `SignalProvider` interface; degrades gracefully.
 - **Header-based control surface** that never touches the request body.
 - **Observable by default.** OpenTelemetry throughout; per-model cost attribution.
-- **Yours.** Self-hosted, config-driven, MIT. Adding a model is an edit, not a deploy.
+- **Yours.** Self-hosted, config-driven, MIT. Adding a model — cloud vendor or **local LLM**
+  (Ollama, vLLM, …) — is an edit, not a deploy
+  ([how-to](docs/help/adding-vendors-and-local-llms.md)).
 
 ---
 
