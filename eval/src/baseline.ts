@@ -8,6 +8,7 @@ import {
   MAX_TIER,
   STRATEGIES,
   type ModelDescriptor,
+  type RequestAnalysis,
   type RoutingRequest,
   type Strategy,
 } from "../../src/types.js";
@@ -31,7 +32,10 @@ export interface PromptDelta {
   routerModel: string;
   change: Change;
   baseCost: number | null;
+  /** Completion cost + routing (classifier-call) overhead, ADR 0018. */
   routerCost: number;
+  /** The classifier-call overhead component of routerCost (0 for `fast`). */
+  routingOverhead: number;
   competencyBase: number;
   competencyRouter: number;
   benchBase: number | null;
@@ -46,6 +50,8 @@ export interface StrategyStat {
   cost: {
     base: number;
     router: number;
+    /** Classifier-call overhead included in `router` (routing's per-request tax). */
+    routingOverhead: number;
     savedOnDowngrades: number;
     spentOnUpgrades: number;
     netSaved: number;
@@ -93,6 +99,19 @@ export async function baselineReport(
   const provider = opts.provider ?? new HeuristicSignalProvider();
   const router = new Router(config, makeAnalyze(provider));
 
+  // Per-request classifier-call overhead the router pays but always-base does
+  // not (ADR 0018). Modeled from the classifier model's price + the prompt size;
+  // `fast` uses the free heuristic signal (ADR 0012) so it pays none.
+  const cls = config.server.classifier;
+  const clsModel = cls.enabled ? byId.get(cls.model) : undefined;
+  const CLS_SYSTEM_TOKENS = 80; // classifier system prompt
+  const CLS_OUTPUT_TOKENS = 80; // the small JSON it returns
+  const classifierCost = (a: RequestAnalysis): number =>
+    clsModel
+      ? ((a.inputTokens + CLS_SYSTEM_TOKENS) / 1000) * clsModel.costPer1kInput +
+        (CLS_OUTPUT_TOKENS / 1000) * clsModel.costPer1kOutput
+      : 0;
+
   const deltas: PromptDelta[] = [];
 
   const build = (sc: Scenario, strategy: Strategy): RoutingRequest => ({
@@ -124,11 +143,15 @@ export async function baselineReport(
     const baseCost = baseServes ? estimateCost(baseModel, a) : null;
     const compBase = competency(baseModel, task);
     const benchBaseInfo = taskBenchmark(base, task);
+    const clsCost = classifierCost(a);
 
     for (const strategy of STRATEGIES) {
       const { decision, analysis: a2 } = await router.decide(build(sc, strategy));
       const routerModel = byId.get(decision.modelId)!;
-      const routerCost = estimateCost(routerModel, a2!);
+      // Classifier overhead is real routing cost the base never pays; `fast`
+      // uses the free heuristic signal so it pays none.
+      const routingOverhead = strategy === "fast" ? 0 : clsCost;
+      const routerCost = estimateCost(routerModel, a2!) + routingOverhead;
       const compRouter = competency(routerModel, task);
       const benchRouterInfo = taskBenchmark(routerModel.id, task);
 
@@ -150,6 +173,7 @@ export async function baselineReport(
         change,
         baseCost,
         routerCost,
+        routingOverhead,
         competencyBase: compBase,
         competencyRouter: compRouter,
         benchBase: benchBaseInfo?.score ?? null,
@@ -193,6 +217,7 @@ function summarize(rows: PromptDelta[], strategy: Strategy): StrategyStat {
     cost: {
       base,
       router,
+      routingOverhead: rows.reduce((s, r) => s + r.routingOverhead, 0),
       savedOnDowngrades,
       spentOnUpgrades,
       netSaved,

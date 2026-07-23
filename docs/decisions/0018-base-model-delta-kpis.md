@@ -37,6 +37,12 @@ Per prompt, compare the router's pick to always-base by **per-task competency** 
 ### 2. Two KPIs, reported separately
 
 - **Cost** — total vs always-base (net %), split into cost Δ on downgrades vs upgrades.
+  The routed total **includes the per-request classifier-call overhead** (ADR 0003) that
+  always-base never pays — routing's fixed per-request tax, modeled from the classifier
+  model's price and the prompt size. `best`/`value` pay it (the LLM classifier); `fast` uses
+  the free heuristic signal ([ADR 0012](0012-classifier-latency.md)) and pays none. Leaving it
+  out overstates the savings — and on trivial prompts the overhead can *exceed* what routing
+  saves, which is exactly the kind of thing the KPI must not hide.
 - **Targeted accuracy** — router − base, **segmented by whether the prompt needed accuracy**
   (hard, `complexity ≥ 0.5`) vs not. "Accuracy where you need it" is the headline: the mean
   delta on the hard, benchmark-relevant prompts. Conversation/chat prompts (no benchmark) are
@@ -97,6 +103,7 @@ The report is only meaningful relative to a chosen default, and the choice is th
 ## Follow-ups / TODO
 
 - [x] Cost + competency + task-benchmark lenses; upgrade/downgrade/forced classification.
+- [x] Include the per-request classifier-call overhead in the routed cost (routing's tax).
 - [x] LLM-judged lens (`--judge N`), base-vs-router, directional per change type.
 - [ ] Emit per-benchmark raw scores into `model-scores.json` to sharpen lens 2.
 - [ ] Larger, difficulty-labeled dataset so the hard/easy segmentation is robust.
