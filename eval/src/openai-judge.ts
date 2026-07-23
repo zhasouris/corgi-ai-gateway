@@ -5,7 +5,8 @@
  */
 
 import OpenAI from "openai";
-import { getConfig } from "../../src/config.js";
+import { getConfig, type AppConfig } from "../../src/config.js";
+import { Forwarder } from "../../src/providers/forwarder.js";
 import type { Judge, ModelCaller } from "./judge.js";
 
 export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "gpt-4.1-mini";
@@ -18,6 +19,37 @@ function client(): OpenAI {
     apiKey: config.providerApiKey("openai") ?? "missing",
     maxRetries: 1,
   });
+}
+
+/**
+ * A ModelCaller that forwards through the gateway's own adapter layer, so it can
+ * call ANY provider the deployment has a key for (not just OpenAI) and always
+ * gets an OpenAI-shaped response back (adapter.parseResponse). Returns "" on a
+ * non-200 (e.g. missing key) so the judge step can skip it.
+ */
+export function forwarderCaller(config: AppConfig = getConfig()): ModelCaller {
+  const forwarder = new Forwarder(config);
+  const byId = new Map(config.catalog.map((m) => [m.id, m]));
+  return {
+    async complete(model, prompt) {
+      const m = byId.get(model);
+      if (!m) return "";
+      const resp = await forwarder.forward({
+        provider: m.provider,
+        model,
+        body: { model, messages: [{ role: "user", content: prompt }], max_tokens: 400, temperature: 0 },
+        incomingHeaders: {},
+        stream: false,
+      });
+      if (resp.status >= 400 || !resp.body) return "";
+      try {
+        const d = JSON.parse(resp.body) as { choices?: { message?: { content?: string } }[] };
+        return d.choices?.[0]?.message?.content ?? "";
+      } catch {
+        return "";
+      }
+    },
+  };
 }
 
 export function openaiCaller(oa: OpenAI = client()): ModelCaller {

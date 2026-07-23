@@ -13,7 +13,7 @@ import { isStrategy, type Strategy } from "../src/types.js";
 import { baselineReport, type BaselineReport, type StrategyStat } from "./src/baseline.js";
 import { loadDataset } from "./src/dataset.js";
 import { judgeBaseline, type JudgedSummary } from "./src/judge-baseline.js";
-import { openaiCaller, openaiJudge } from "./src/openai-judge.js";
+import { forwarderCaller, openaiJudge } from "./src/openai-judge.js";
 
 interface Args {
   base: string;
@@ -141,7 +141,7 @@ async function main() {
       routerModel: d.routerModel,
     }));
     console.error(`\nJudging ${items.length} base-vs-router disagreements (real model calls)...`);
-    const summary = await judgeBaseline(items, args.base, openaiCaller(), openaiJudge());
+    const summary = await judgeBaseline(items, args.base, forwarderCaller(), openaiJudge());
     writeFileSync(`${args.out}/baseline-judged.json`, JSON.stringify(summary, null, 2) + "\n");
     const jmd = renderJudged(summary, args.judgeStrategy);
     appendFileSync(`${args.out}/baseline.md`, "\n" + jmd + "\n");

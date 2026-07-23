@@ -49,6 +49,8 @@ export async function judgeBaseline(
       caller.complete(base, it.prompt),
       caller.complete(it.routerModel, it.prompt),
     ]);
+    // A model with no key (or a failed call) returns "" — can't judge it fairly.
+    if (!baseAns.trim() || !routerAns.trim()) continue;
 
     let verdict: Verdict;
     let margin: number;

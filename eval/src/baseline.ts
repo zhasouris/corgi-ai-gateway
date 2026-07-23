@@ -1,7 +1,7 @@
 import { getConfig } from "../../src/config.js";
 import { makeAnalyze } from "../../src/core/analysis.js";
 import { ALL_CONSTRAINTS } from "../../src/core/constraints.js";
-import { Router } from "../../src/core/router.js";
+import { NoEligibleModelError, Router } from "../../src/core/router.js";
 import { filterCandidates } from "../../src/core/scoring.js";
 import { HeuristicSignalProvider, type SignalProvider } from "../../src/core/signal.js";
 import {
@@ -107,7 +107,15 @@ export async function baselineReport(
   for (const sc of dataset) {
     // One analysis (strategy-independent) for the task, difficulty, and base cost.
     const probe = build(sc, "value");
-    const { analysis } = await router.decide(probe);
+    let analysis;
+    try {
+      ({ analysis } = await router.decide(probe));
+    } catch (e) {
+      // Nothing can serve this prompt (e.g. audio with no audio model) — neither
+      // base nor router. Not a routing decision to diff; skip it.
+      if (e instanceof NoEligibleModelError) continue;
+      throw e;
+    }
     const a = analysis!;
     const task = a.classifier.taskType;
     const needsAccuracy = a.classifier.complexity >= NEEDS_ACCURACY;
