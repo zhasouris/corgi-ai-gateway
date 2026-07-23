@@ -428,6 +428,7 @@ implementation is open.
 | [0011](docs/decisions/0011-lexicographic-tie-break.md) | Lexicographic tie-break — `quality-prefer-cost` and friends | 📋 Proposed — unblocked |
 | [0012](docs/decisions/0012-classifier-latency.md) | Cut classifier latency — the router's entire overhead is one LLM call | 🟡 Partial — `latency` uses a fast signal (done); caching planned |
 | [0013](docs/decisions/0013-routellm-sidecar-transport.md) | Keep the HTTP sidecar (reject CLI); the real lever is the embedding hop | ✅ Accepted — local-embedding follow-up open |
+| [0014](docs/decisions/0014-dotnet-client-and-prerequisites.md) | Official .NET client (Semantic Kernel) + the router-side headers it needs | 📋 Proposed — R2 shipped; R1/R3/R4 open |
 
 ---
 

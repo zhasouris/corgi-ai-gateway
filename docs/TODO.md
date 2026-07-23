@@ -169,6 +169,24 @@ Azure deployment. That work is open:
 
 ---
 
+### 8. Router-side prerequisites for the .NET client (ADR 0014)
+
+The official .NET client ([ADR 0014](decisions/0014-dotnet-client-and-prerequisites.md), a
+separate repo) needs four things from *this* repo. All are additive and sit under the header
+contract ([ADR 0002](decisions/0002-router-header-contract.md)).
+
+- [x] **R2** — `POST /v1/router/explain` dry-run (decision + ranked + excluded, no execution).
+      **Already shipped.**
+- [ ] **R1** — `X-Router-Pin: <model>` request header. Forces a model like `X-Router-Bypass`
+      but records it as a *pin*, so telemetry can tell a pin from a bypass.
+- [ ] **R3** — `X-Router-Cost-Usd` response header. The value already exists (`estimatedCost`
+      in `router.ts`); this just emits it, so the client doesn't duplicate pricing and drift.
+- [ ] **R4** — `X-Router-Decision-Id` response header. Opaque id correlating a decision to
+      router telemetry ([ADR 0008](decisions/0008-observability.md)); distinct from the W3C
+      trace id.
+
+---
+
 ## Carried over
 
 Already tracked elsewhere; listed here so this file is the single view.
