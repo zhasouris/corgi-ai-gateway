@@ -140,20 +140,72 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
     app.get("/v1/router/models", availabilityHandler);
   }
 
-  // Decision-inspector demo (page + explain endpoint). Registered BEFORE the
-  // /v1 auth guard so it works with only the server-side classifier key — no
-  // proxy key needed. It runs the pipeline for inspection but NEVER forwards a
-  // completion, and is gated by demo.enabled (turn off in production).
-  if (config.server.demo.enabled) {
+  // Standard decision-explanation endpoint (ADR 0016). Always registered, ahead
+  // of the /v1 bearer guard, and anonymous — any caller, no credentials. Runs
+  // the full routing pipeline and returns the decision trace, but NEVER forwards
+  // a completion; it needs the server-side classifier key for real signals.
+  {
     const cls = config.server.classifier;
     const hasClassifierKey =
       config.secrets.classifierApiKey ?? config.resolveApiKey(cls.provider, cls.model);
     if (cls.enabled && !hasClassifierKey) {
-      logWarn("demo enabled but no classifier API key configured — signals will be degraded", {
+      logWarn("classifier API key not configured — /v1/router/explain signals will be degraded", {
         hint: "set CLASSIFIER_API_KEY",
       });
     }
+  }
 
+  app.post("/v1/router/explain", async (c) => {
+    let raw: Record<string, unknown>;
+    try {
+      raw = (await c.req.json()) as Record<string, unknown>;
+    } catch {
+      return errorResponse("invalid JSON body", 400, "invalid_request_error");
+    }
+    const options = parseOptions((n) => c.req.header(n), config.server.default_strategy);
+    const req: RoutingRequest = {
+      body: raw,
+      options,
+      requiresVision: false,
+      requiresTools: false,
+      requiresStructuredOutput: false,
+      requiresAudio: false,
+    };
+    const result = await router.explain(req);
+
+    // Shadow RouteLLM signal (best-effort; shown alongside the classifier).
+    // Enable via server.yaml or the ROUTELLM_ENABLED env override (config.ts).
+    const rl = config.server.routellm;
+    let routellm: {
+      enabled: boolean;
+      available: boolean;
+      winRate?: number;
+      confidence?: number;
+    } = { enabled: rl.enabled, available: false };
+    if (rl.enabled && !result.bypassed) {
+      const score = await fetchRouteLLMScore(rl.url, promptText(req, 8000));
+      if (score) {
+        routellm = { enabled: true, available: true, winRate: score.winRate, confidence: score.confidence };
+      }
+    }
+
+    // Mirror the proxy path's response headers (ADR 0002). /v1/router/explain
+    // returns the decision as a body, but emitting the same headers lets the
+    // demo show exactly what a real client reads off /v1/chat/completions.
+    const headers: Record<string, string> = { [H_DURATION]: String(result.routingMs) };
+    if (result.decision) {
+      headers[H_MODEL] = headerSafe(result.decision.model);
+      headers[H_REASON] = headerSafe(result.decision.reason);
+    }
+    if (result.warnings.length) headers[H_WARNING] = headerSafe(result.warnings.join("; "));
+
+    return c.json({ ...result, routellm }, 200, headers);
+  });
+
+  // Decision-inspector demo PAGE. Human-facing; gated by demo.enabled. Its
+  // JavaScript calls the anonymous /v1/router/explain above. (Sign-in gate for
+  // this page is ADR 0016; not yet implemented.)
+  if (config.server.demo.enabled) {
     const presets = loadPresets();
     // Recomputed per request: keys come from the environment, so availability
     // can change on a container restart without the page being rebuilt.
@@ -164,53 +216,6 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
         }),
       ),
     );
-
-    app.post("/v1/router/explain", async (c) => {
-      let raw: Record<string, unknown>;
-      try {
-        raw = (await c.req.json()) as Record<string, unknown>;
-      } catch {
-        return errorResponse("invalid JSON body", 400, "invalid_request_error");
-      }
-      const options = parseOptions((n) => c.req.header(n), config.server.default_strategy);
-      const req: RoutingRequest = {
-        body: raw,
-        options,
-        requiresVision: false,
-        requiresTools: false,
-        requiresStructuredOutput: false,
-        requiresAudio: false,
-      };
-      const result = await router.explain(req);
-
-      // Shadow RouteLLM signal (best-effort; shown alongside the classifier).
-      // Enable via server.yaml or the ROUTELLM_ENABLED env override (config.ts).
-      const rl = config.server.routellm;
-      let routellm: {
-        enabled: boolean;
-        available: boolean;
-        winRate?: number;
-        confidence?: number;
-      } = { enabled: rl.enabled, available: false };
-      if (rl.enabled && !result.bypassed) {
-        const score = await fetchRouteLLMScore(rl.url, promptText(req, 8000));
-        if (score) {
-          routellm = { enabled: true, available: true, winRate: score.winRate, confidence: score.confidence };
-        }
-      }
-
-      // Mirror the proxy path's response headers (ADR 0002). /v1/router/explain
-      // returns the decision as a body, but emitting the same headers lets the
-      // demo show exactly what a real client reads off /v1/chat/completions.
-      const headers: Record<string, string> = { [H_DURATION]: String(result.routingMs) };
-      if (result.decision) {
-        headers[H_MODEL] = headerSafe(result.decision.model);
-        headers[H_REASON] = headerSafe(result.decision.reason);
-      }
-      if (result.warnings.length) headers[H_WARNING] = headerSafe(result.warnings.join("; "));
-
-      return c.json({ ...result, routellm }, 200, headers);
-    });
   }
 
   // Auth guards the rest of the /v1 surface (models, chat completions).

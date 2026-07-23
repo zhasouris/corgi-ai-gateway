@@ -152,11 +152,11 @@ Console** (`gcloud` cannot fully create them). Manual prerequisite:
 
 ## Follow-ups / TODO
 
-- [ ] Move `/v1/router/explain` out of the `if (demo.enabled)` block in
+- [x] Move `/v1/router/explain` out of the `if (demo.enabled)` block in
       [`src/app.ts`](../../src/app.ts) — register it unconditionally, ahead of the bearer guard,
-      with no auth.
-- [ ] Add `/v1/router/explain` to [`src/openapi.ts`](../../src/openapi.ts) (request body + option
-      headers + decision-trace response and `X-Router-*` headers).
+      with no auth. *(done)*
+- [x] Add `/v1/router/explain` to [`src/openapi.ts`](../../src/openapi.ts) (request body + option
+      headers + decision-trace response and `X-Router-*` headers). *(done)*
 - [ ] `/auth/login`, `/auth/callback`, `/auth/logout` routes + `requireSession` middleware (new
       `src/google-auth.ts`), gating **`/demo` only**.
 - [ ] Config schema `demo.auth.{enabled,allowed_emails,allowed_domain}`; env overrides

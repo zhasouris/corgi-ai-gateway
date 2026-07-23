@@ -115,4 +115,23 @@ describe("demo-only deployment", () => {
       resetConfigCache();
     }
   });
+
+  // /v1/router/explain is a standard, always-on, anonymous endpoint (ADR 0016) —
+  // it is NOT gated by the demo page. Turning the page off must not remove it.
+  it("keeps /v1/router/explain available with the demo page off (ADR 0016)", async () => {
+    process.env.DEMO_ENABLED = "false";
+    resetConfigCache();
+    try {
+      expect((await createApp(deps()).request("/demo")).status).toBe(404);
+      const res = await createApp(deps()).request("/v1/router/explain", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: "Say hi" }] }),
+      });
+      expect(res.status).toBe(200);
+    } finally {
+      delete process.env.DEMO_ENABLED;
+      resetConfigCache();
+    }
+  });
 });

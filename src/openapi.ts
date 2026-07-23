@@ -210,6 +210,66 @@ export const openApiSpec = {
         },
       },
     },
+    "/v1/router/explain": {
+      post: {
+        summary: "Explain the routing decision for a request (anonymous; no completion)",
+        description:
+          "Runs the full routing pipeline — classifier signals, constraint filtering, weighted " +
+          "scoring — and returns the decision and ranked candidates, but NEVER forwards the " +
+          "request to a provider. Anonymous and always available (ADR 0016): no bearer token " +
+          "required. The body is the same OpenAI-shaped chat request as /v1/chat/completions, " +
+          "steered with the same X-Router-* headers. Costs one classifier call; spends nothing " +
+          "on model completions.",
+        security: [],
+        parameters: [
+          {
+            name: "X-Router-Strategy",
+            in: "header",
+            required: false,
+            schema: { type: "string", enum: ["cost", "quality", "latency", "balanced"] },
+            description: "Optimization to favor. Unknown values fail soft to the default.",
+          },
+          {
+            name: "X-Router-Bypass",
+            in: "header",
+            required: false,
+            schema: { type: "string", enum: ["true", "false"] },
+            description: "When true, report the body's model verbatim instead of routing.",
+          },
+          {
+            name: "X-Router-Max-Cost",
+            in: "header",
+            required: false,
+            schema: { type: "number" },
+            description: "Ceiling on blended per-1k cost.",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/ChatCompletionRequest" } },
+          },
+        },
+        responses: {
+          "200": {
+            description: "The routing decision and ranked candidates (no upstream call made)",
+            headers: {
+              "X-Router-Model": { schema: { type: "string" }, description: "Model chosen" },
+              "X-Router-Reason": { schema: { type: "string" }, description: "Why it was chosen" },
+              "X-Router-Duration-Ms": {
+                schema: { type: "integer" },
+                description: "Time spent routing",
+              },
+              "X-Router-Warning": { schema: { type: "string" }, description: "Soft warnings" },
+            },
+          },
+          "400": {
+            description: "Invalid JSON body",
+            content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+          },
+        },
+      },
+    },
     "/healthz": {
       get: {
         summary: "Liveness check",
