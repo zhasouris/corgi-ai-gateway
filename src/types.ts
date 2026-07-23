@@ -44,6 +44,17 @@ export const COMPETENCY_TASKS = new Set<string>(
   TASK_TYPES.filter((t) => t !== "conversation"),
 );
 
+/** Tier normalization denominator for the competency tier-fallback (ADR 0010). */
+export const MAX_TIER = 6;
+
+/** One provenanced per-task competency score (ADR 0010). */
+export interface CompetencyEntry {
+  score: number;
+  source: string;
+  updated: string;
+  confidence?: string;
+}
+
 /** Loose view of an OpenAI chat.completions request; forwarded unchanged
  *  except for `model` (testing invariant #14). */
 export interface ChatCompletionRequest {
@@ -139,9 +150,9 @@ export interface ModelDescriptor {
   /** Optional env var holding this model's own API key (for per-model billing);
    *  falls back to the provider default key when unset. */
   apiKeyEnv?: string;
-  /** Sparse per-task competency scores (0..1), keyed by task type (ADR 0010).
-   *  A missing task falls back to a tier-derived value in the task_type rule. */
-  competency?: Record<string, number>;
+  /** Sparse per-task competency (ADR 0010), keyed by task type. A missing task
+   *  falls back to a tier-derived value in the task_type rule. */
+  competency?: Record<string, CompetencyEntry>;
 }
 
 export function supports(model: ModelDescriptor, cap: Capability): boolean {

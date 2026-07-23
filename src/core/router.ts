@@ -20,6 +20,7 @@ import type {
   ScoredModel,
   Strategy,
 } from "../types.js";
+import { COMPETENCY_TASKS, MAX_TIER } from "../types.js";
 import { makeAnalyze, type AnalyzeFn } from "./analysis.js";
 import { ALL_CONSTRAINTS } from "./constraints.js";
 import { detectRequirements } from "./detect.js";
@@ -278,12 +279,31 @@ export class Router {
     const weights = this.config.strategies[req.options.strategy] ?? {};
     const scored = scoreModels(eligibleModels, ALL_RULES, analysis.features, weights);
     const outTokens = analysis.classifier.expectedOutputTokens;
+    // Trace the number that drove the task_type rule: the model's provenanced
+    // competency for the detected task, or a tier-derived fallback (ADR 0010).
+    // Null when the task is the generic `conversation` default (rule is neutral).
+    const task = analysis.classifier.taskType;
+    const taskCompetency = (m: ModelDescriptor): TaskCompetency | null => {
+      if (!COMPETENCY_TASKS.has(task)) return null;
+      const entry = m.competency?.[task];
+      if (entry) {
+        return { task, score: entry.score, source: entry.source, updated: entry.updated, fallback: false };
+      }
+      return {
+        task,
+        score: Number((m.tier / MAX_TIER).toFixed(3)),
+        source: `tier ${m.tier}/${MAX_TIER} (no competency data)`,
+        updated: null,
+        fallback: true,
+      };
+    };
     const ranked = scored.map((s) => ({
       model: s.model.id,
       provider: s.model.provider,
       tier: s.model.tier,
       score: Number(s.score.toFixed(4)),
       breakdown: s.breakdown,
+      competency: taskCompetency(s.model),
       estimatedCost: Number(
         (
           (analysis.inputTokens / 1000) * s.model.costPer1kInput +
@@ -326,6 +346,16 @@ export class Router {
   }
 }
 
+/** The competency number that fed the task_type rule for one model (ADR 0010). */
+export interface TaskCompetency {
+  task: string;
+  score: number;
+  source: string;
+  updated: string | null;
+  /** True when this is a tier-derived fallback (no seeded competency for the task). */
+  fallback: boolean;
+}
+
 export interface ExplainResult {
   strategy: Strategy;
   /** True when a model was forced via bypass (routing skipped). */
@@ -349,6 +379,7 @@ export interface ExplainResult {
     tier: number;
     score: number;
     breakdown: Record<string, number>;
+    competency: TaskCompetency | null;
     estimatedCost: number;
   }[];
   decision: { model: string; provider: string; reason: string } | null;

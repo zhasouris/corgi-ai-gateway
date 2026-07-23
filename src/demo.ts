@@ -356,6 +356,13 @@ export function demoHtml(
       var topScorer = data.ranked[0].model;
       var passedOver = chosen !== null && topScorer !== chosen;
 
+      function compCell(r) {
+        var k = r.competency;
+        if (!k) return '<td class="muted" title="generic task — competency not applied">—</td>';
+        var tip = (k.fallback ? 'tier fallback: ' : '') + k.source + (k.updated ? ' · updated ' + k.updated : '');
+        return '<td title="' + esc(tip) + '">' + k.score.toFixed(3) +
+          (k.fallback ? '<span class="muted">†</span>' : '') + '</td>';
+      }
       var rows = data.ranked.map(function (r) {
         var cls = r.model === chosen ? 'win' : (passedOver && r.model === topScorer ? 'skipped' : '');
         var note = '';
@@ -363,10 +370,16 @@ export function demoHtml(
         else if (passedOver && r.model === topScorer) note = ' <span class="tag muted">top score, no key</span>';
         return '<tr class="' + cls + '"><td>' + avail(r.model) + '</td><td>' +
           esc(r.model) + note + '</td><td>' + vendorCell(r.provider) + '</td><td>' + esc(r.tier) +
-          '</td><td>' + r.score.toFixed(3) + '</td><td>$' + r.estimatedCost.toFixed(5) + '</td></tr>';
+          '</td>' + compCell(r) + '<td>' + r.score.toFixed(3) + '</td><td>$' + r.estimatedCost.toFixed(5) + '</td></tr>';
       }).join('');
+      var compTask = data.ranked[0] && data.ranked[0].competency ? data.ranked[0].competency.task : null;
       html += '<div class="card"><h3>Ranked candidates</h3><table>' +
-        '<tr><th></th><th>model</th><th>vendor</th><th>tier</th><th>score</th><th>est. cost</th></tr>' + rows + '</table></div>';
+        '<tr><th></th><th>model</th><th>vendor</th><th>tier</th>' +
+        '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' +
+        '<th>score</th><th>est. cost</th></tr>' + rows + '</table>' +
+        (compTask ? '<div class="muted" style="margin-top:.4rem">comp. = competency for detected task <code>' +
+          esc(compTask) + '</code>; † = tier fallback (no benchmark data). Hover a value for its source.</div>' : '') +
+        '</div>';
     }
 
     if (data.excluded && data.excluded.length) {

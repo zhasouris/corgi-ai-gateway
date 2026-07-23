@@ -6,13 +6,11 @@
  * magnitude would be destroyed by min-max (see FeatureRule.fixedScale).
  */
 
-import { COMPETENCY_TASKS, supports, type FeatureScore, type ModelDescriptor } from "../../types.js";
+import { COMPETENCY_TASKS, MAX_TIER, supports, type FeatureScore, type ModelDescriptor } from "../../types.js";
 import { clamp01, type FeatureRule } from "./types.js";
 
 const LARGE_PROMPT_TOKENS = 128_000;
 const LARGE_OUTPUT_TOKENS = 8_192;
-/** Tier normalization denominator for the competency fallback (ADR 0010). */
-const MAX_TIER = 6;
 const LOCAL_PROVIDERS = new Set(["ollama", "local", "self_hosted"]);
 
 const f = (name: string, value: number, raw?: FeatureScore["raw"], metadata?: Record<string, unknown>): FeatureScore => ({
@@ -86,7 +84,7 @@ export const taskTypeRule: FeatureRule = {
     const task = String(signal.raw);
     // Seeded competency for this task if we have it, else a tier-derived fallback
     // so a model with no competency data is treated exactly as before (by tier).
-    return model.competency?.[task] ?? model.tier / MAX_TIER;
+    return model.competency?.[task]?.score ?? model.tier / MAX_TIER;
   },
 };
 

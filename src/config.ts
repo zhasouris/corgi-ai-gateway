@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { CAPABILITIES, STRATEGIES, TASK_TYPES, type Capability, type ModelDescriptor } from "./types.js";
+import { CAPABILITIES, STRATEGIES, TASK_TYPES, type Capability, type CompetencyEntry, type ModelDescriptor } from "./types.js";
 
 // Resolved at call time (not import time) so tests can point at fixtures.
 function configDir(): string {
@@ -208,7 +208,7 @@ function loadYamlOptional(name: string): unknown {
 
 function toDescriptor(
   m: z.infer<typeof modelSchema>,
-  competency?: Record<string, number>,
+  competency?: Record<string, CompetencyEntry>,
 ): ModelDescriptor {
   return {
     id: m.id,
@@ -259,19 +259,24 @@ export function getConfig(): AppConfig {
   const competencyRaw = competencySchema.parse(loadYamlOptional("competency.yaml") ?? { models: {} });
   const catalogIds = new Set(catalogRaw.models.map((m) => m.id));
   const validTasks = new Set<string>(TASK_TYPES);
-  const competencyByModel: Record<string, Record<string, number>> = {};
+  const competencyByModel: Record<string, Record<string, CompetencyEntry>> = {};
   for (const [modelId, tasks] of Object.entries(competencyRaw.models)) {
     if (!catalogIds.has(modelId)) {
       throw new Error(`competency.yaml references unknown model id '${modelId}'`);
     }
-    const scores: Record<string, number> = {};
+    const entries: Record<string, CompetencyEntry> = {};
     for (const [task, entry] of Object.entries(tasks)) {
       if (!validTasks.has(task)) {
         throw new Error(`competency.yaml: model '${modelId}' has unknown task '${task}'`);
       }
-      scores[task] = entry.score;
+      entries[task] = {
+        score: entry.score,
+        source: entry.source,
+        updated: String(entry.updated),
+        confidence: entry.confidence,
+      };
     }
-    competencyByModel[modelId] = scores;
+    competencyByModel[modelId] = entries;
   }
 
   const catalog = catalogRaw.models.map((m) => toDescriptor(m, competencyByModel[m.id]));
