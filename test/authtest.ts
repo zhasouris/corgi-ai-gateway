@@ -31,6 +31,8 @@ export async function authResolver(): Promise<KeyResolver> {
 
 export interface MintOptions {
   scope?: string;
+  /** App roles (Entra app-only tokens). When set, `scope` is omitted unless also given. */
+  roles?: string[];
   audience?: string;
   issuer?: string;
   clientId?: string;
@@ -40,7 +42,13 @@ export interface MintOptions {
 /** Mint a signed JWT. Defaults produce a valid token for the test issuer/audience. */
 export async function mintToken(opts: MintOptions = {}): Promise<string> {
   const { kp } = await keys();
-  return new SignJWT({ scope: opts.scope ?? TEST_SCOPE, azp: opts.clientId ?? "test-client" })
+  const claims: Record<string, unknown> = { azp: opts.clientId ?? "test-client" };
+  // Default to the standard scope only when neither scope nor roles is specified.
+  if (opts.scope !== undefined) claims["scope"] = opts.scope;
+  else if (!opts.roles) claims["scope"] = TEST_SCOPE;
+  if (opts.roles) claims["roles"] = opts.roles;
+
+  return new SignJWT(claims)
     .setProtectedHeader({ alg: "RS256", kid: KID })
     .setIssuedAt()
     .setIssuer(opts.issuer ?? TEST_ISSUER)

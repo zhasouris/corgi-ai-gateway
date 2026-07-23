@@ -29,13 +29,22 @@ function jwksUrl(auth: AppConfig["server"]["auth"]): string {
   return `${auth.issuer.replace(/\/$/, "")}/.well-known/jwks.json`;
 }
 
-/** True when the token's `scope` (space-delimited) or `scp` claim contains `required`. */
+/**
+ * True when the required scope/role is present. Delegated (user) tokens carry it
+ * in `scope`/`scp` (space-delimited); app-only client-credentials tokens on
+ * Entra ID carry it in `roles` (an array of app roles). Accept any of them, so
+ * the check is provider-agnostic.
+ */
 function hasScope(payload: JWTPayload, required: string): boolean {
   if (!required) return true;
-  const raw = payload["scope"] ?? payload["scp"];
-  const scopes =
-    typeof raw === "string" ? raw.split(" ") : Array.isArray(raw) ? raw.map(String) : [];
-  return scopes.includes(required);
+  const collect = (v: unknown): string[] =>
+    typeof v === "string" ? v.split(" ") : Array.isArray(v) ? v.map(String) : [];
+  const claims = [
+    ...collect(payload["scope"]),
+    ...collect(payload["scp"]),
+    ...collect(payload["roles"]),
+  ];
+  return claims.includes(required);
 }
 
 function unauthorized(c: Context, detail: string): Response {

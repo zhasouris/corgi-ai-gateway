@@ -61,6 +61,27 @@ endpoint on a public URL. `maxReplicas` bounds how fast that can run away, not
 whether it can. The hostname contains a generated suffix, which is obscurity,
 not security; crawlers find things.
 
+### OAuth app registrations (Microsoft Entra ID)
+
+Those `AUTH_*` values come from an identity provider, not from this deploy.
+`setup-oauth.ps1` scripts the Entra side of it (ADR 0015): it creates the
+**API app registration** for the gateway (the audience + a `router.invoke` app
+role), a **client app registration** for a caller (client id + secret), grants
+the role, and prints the values to paste into `.env` and hand to a caller.
+
+```powershell
+./setup-oauth.ps1                     # create + configure, print the values
+./setup-oauth.ps1 -Scope router.invoke -ApiName corgi-ai-gateway
+./setup-oauth.ps1 -Delete             # remove both registrations
+```
+
+It talks to Microsoft Graph and **mutates your Entra tenant** (needs Application
+Developer or higher), so it is separate from `deploy.ps1` — run it once, drop the
+`AUTH_ISSUER` / `AUTH_AUDIENCE` / `AUTH_REQUIRED_SCOPE` it prints into `.env`,
+then deploy. The client secret is displayed once and never written to disk; treat
+it like any other credential. Other OIDC providers (Auth0, Keycloak, …) are
+configured by hand — see [docs/help/oauth.md](../../docs/help/oauth.md).
+
 ## Prerequisites
 
 - **Azure CLI** — <https://aka.ms/installazurecli>, then `az login`

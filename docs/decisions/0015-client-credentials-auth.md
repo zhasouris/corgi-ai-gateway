@@ -33,9 +33,10 @@ bearer JWT against configuration:
 - **`iss`** — equals the configured trusted issuer.
 - **`aud`** — equals the configured audience (the gateway's API identifier).
 - **`exp` / `nbf`** — the token is currently valid.
-- **Scope** — if a `required_scope` is configured, the token's `scope` (space-delimited) or
-  `scp` claim must contain it. Empty by default (any valid token from the trusted issuer
-  passes).
+- **Scope** — if a `required_scope` is configured, it must appear in the token's `scope`
+  (space-delimited) / `scp` claim (delegated tokens) **or** its `roles` claim (Entra app-only
+  client-credentials tokens carry the app role there). Empty by default (any valid token from
+  the trusted issuer passes).
 
 Any failure → **401** with `WWW-Authenticate: Bearer error="invalid_token"`. The demo
 endpoints (`/demo`, `/v1/router/explain`) remain unauthenticated — they are registered *ahead*

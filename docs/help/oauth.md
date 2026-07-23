@@ -62,7 +62,15 @@ caller** (gets a client id + secret).
 
 **Microsoft Entra ID** — register an API app; the `issuer` is
 `https://login.microsoftonline.com/<tenant>/v2.0` and the `audience` is the app's Application
-ID URI (`api://…`). Expose an app role or scope and set `required_scope` to it.
+ID URI (`api://…`). Expose an **app role** and set `required_scope` to it (client-credentials
+tokens carry the role in the `roles` claim, which the gateway reads). For Entra this is
+scripted — [`deploy/azure/setup-oauth.ps1`](../../deploy/azure/setup-oauth.ps1) creates both
+app registrations, grants the role, and prints the `AUTH_*` values plus a caller's
+`client_id`/`client_secret`:
+
+```powershell
+./deploy/azure/setup-oauth.ps1
+```
 
 **Auth0** — create an API (its *Identifier* is the `audience`); the `issuer` is
 `https://<tenant>.auth0.com/`. Define a permission and set `required_scope`.
