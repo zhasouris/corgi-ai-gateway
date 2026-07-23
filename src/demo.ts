@@ -254,6 +254,17 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
       'Excludes the upstream model call.">' + esc(data.routingMs) + ' ms</span>';
   }
 
+  // Which signal provider ran — varies by strategy (ADR 0012). latency uses a
+  // fast provider (heuristic ~0ms or RouteLLM ~250ms), the rest the classifier.
+  function signalSource(data, c) {
+    var p = data.signalProvider || (c.degraded ? 'heuristic' : 'llm-classifier');
+    var label = { 'llm-classifier': 'LLM classifier (~1s)', 'routellm': 'RouteLLM (~250ms)', 'heuristic': 'heuristic (~0ms)' }[p] || esc(p);
+    if (c.degraded && p !== 'heuristic') {
+      return '<span class="warn">' + label + ' — degraded to heuristic defaults (key/sidecar unavailable?)</span>';
+    }
+    return label;
+  }
+
   function render(data, status, hdrs) {
     if (status !== 200 || data.error) {
       out.innerHTML = '<div class="card err">Error ' + status + ': ' +
@@ -294,7 +305,7 @@ export function demoHtml(presets: Preset[], models: DemoModel[] = []): string {
       '<div>expected output</div><div>' + esc(c.expectedOutputTokens) + ' tokens</div>' +
       '<div>data sensitivity</div><div>' + (c.dataSensitivity != null ? pct(c.dataSensitivity) : '-') + '</div>' +
       '<div>input tokens</div><div>' + esc(data.inputTokens) + '</div>' +
-      '<div>signal source</div><div>' + (c.degraded ? '<span class="warn">degraded (heuristic defaults — is the classifier key set?)</span>' : 'classifier') + '</div>' +
+      '<div>signal source</div><div>' + signalSource(data, c) + '</div>' +
       '</div></div>';
 
     var rl = data.routellm;

@@ -45,10 +45,20 @@ export class Router {
   constructor(
     private readonly config: AppConfig,
     analyzeFn?: AnalyzeFn,
+    // Per-strategy signal-provider overrides (ADR 0012). A strategy absent here
+    // uses the default `analyzeFn`. This is how `latency` gets a fast signal
+    // (heuristic or RouteLLM, ~0–250ms) instead of the ~1s LLM classifier whose
+    // output it barely weights. Empty by default, so existing callers and every
+    // test that passes a single analyze fn are unaffected.
+    private readonly analyzeByStrategy: Partial<Record<Strategy, AnalyzeFn>> = {},
   ) {
     this.catalog = config.catalog;
     this.byId = new Map(this.catalog.map((m) => [m.id, m]));
     this.analyzeFn = analyzeFn ?? makeAnalyze(new LlmClassifierProvider(config));
+  }
+
+  private pickAnalyze(strategy: Strategy): AnalyzeFn {
+    return this.analyzeByStrategy[strategy] ?? this.analyzeFn;
   }
 
   private providerFor(modelId: string): string {
@@ -143,7 +153,7 @@ export class Router {
       };
     }
 
-    const analysis = await this.analyzeFn(req);
+    const analysis = await this.pickAnalyze(req.options.strategy)(req);
 
     return tracer.startActiveSpan("router.score", (span) => {
       let candidates = filterCandidates(this.catalog, ALL_CONSTRAINTS, req, analysis);
@@ -252,7 +262,7 @@ export class Router {
       };
     }
 
-    const analysis = await this.analyzeFn(req);
+    const analysis = await this.pickAnalyze(req.options.strategy)(req);
 
     const eligibleModels = filterCandidates(this.catalog, ALL_CONSTRAINTS, req, analysis);
     const eligibleSet = new Set(eligibleModels.map((m) => m.id));
@@ -298,6 +308,7 @@ export class Router {
       detected,
       inputTokens: analysis.inputTokens,
       classifier: analysis.classifier,
+      signalProvider: analysis.signalProvider,
       features: analysis.features,
       eligible: eligibleModels.map((m) => m.id),
       excluded,
@@ -327,6 +338,8 @@ export interface ExplainResult {
   };
   inputTokens: number;
   classifier: ClassifierResult | null;
+  /** Which signal provider ran (heuristic / llm-classifier / routellm). */
+  signalProvider?: string;
   features: Record<string, FeatureScore>;
   eligible: string[];
   excluded: { model: string; failedConstraints: string[] }[];

@@ -23,7 +23,12 @@ export function makeAnalyze(provider: SignalProvider): AnalyzeFn {
       const inputTokens = countInputTokens(req.body);
       const classifier = await provider.analyze(req);
 
-      const analysis: RequestAnalysis = { inputTokens, classifier, features: {} };
+      const analysis: RequestAnalysis = {
+        inputTokens,
+        classifier,
+        features: {},
+        signalProvider: provider.name,
+      };
       for (const rule of ALL_RULES) {
         analysis.features[rule.name] = rule.extract(req, analysis);
       }

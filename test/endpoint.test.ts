@@ -32,6 +32,7 @@ async function stubAnalyze(req: RoutingRequest): Promise<RequestAnalysis> {
     inputTokens: 10,
     classifier: { ...defaultClassifierResult(), complexity: 0.2, expectedOutputTokens: 200 },
     features: {},
+    signalProvider: "stub",
   };
   const { ALL_RULES } = await import("../src/core/extractors/rules.js");
   for (const rule of ALL_RULES) analysis.features[rule.name] = rule.extract(req, analysis);

@@ -76,6 +76,7 @@ export function makeAnalysis(
     inputTokens: opts.inputTokens ?? 100,
     classifier: opts.classifier ?? defaultClassifierResult(),
     features: {},
+    signalProvider: "test",
   };
   const req = makeRequest();
   for (const rule of ALL_RULES) analysis.features[rule.name] = rule.extract(req, analysis);

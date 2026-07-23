@@ -100,6 +100,8 @@ export interface RequestAnalysis {
   inputTokens: number;
   classifier: ClassifierResult;
   features: Record<string, FeatureScore>;
+  /** Which SignalProvider produced `classifier` — varies by strategy. */
+  signalProvider: string;
 }
 
 export interface ModelDescriptor {

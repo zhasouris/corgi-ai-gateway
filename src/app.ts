@@ -7,8 +7,14 @@ import { swaggerUI } from "@hono/swagger-ui";
 import { Hono, type Context } from "hono";
 import { makeAuth } from "./auth.js";
 import { getConfig, type AppConfig } from "./config.js";
+import { makeAnalyze, type AnalyzeFn } from "./core/analysis.js";
 import { NoEligibleModelError, Router } from "./core/router.js";
-import { fetchRouteLLMScore, promptText } from "./core/signal.js";
+import {
+  fetchRouteLLMScore,
+  HeuristicSignalProvider,
+  promptText,
+  RouteLLMProvider,
+} from "./core/signal.js";
 import { demoHtml, loadPresets } from "./demo.js";
 import { logWarn } from "./logger.js";
 import {
@@ -32,7 +38,26 @@ export interface AppDeps {
 
 function buildDeps(): AppDeps {
   const config = getConfig();
-  return { config, router: new Router(config), forwarder: new Forwarder(config) };
+  return { config, router: buildRouter(config), forwarder: new Forwarder(config) };
+}
+
+/**
+ * Wire the signal provider per strategy (ADR 0012).
+ *
+ * `latency` deliberately does NOT pay for the ~1s LLM classifier: that strategy
+ * is dominated by the deterministic `latency` rule (catalog latency, weight 3.0)
+ * and weights the classifier-derived signals at 0.3–0.5, so the expensive call
+ * barely moves the result. It uses RouteLLM when a sidecar is configured (a real
+ * difficulty signal at ~250ms container-to-container) and otherwise the offline
+ * heuristic (~0ms) — never the classifier. Every other strategy keeps the
+ * classifier default, where complexity/reasoning carry real weight.
+ */
+function buildRouter(config: AppConfig): Router {
+  const rl = config.server.routellm;
+  const fast: AnalyzeFn = rl.enabled
+    ? makeAnalyze(new RouteLLMProvider(rl.url))
+    : makeAnalyze(new HeuristicSignalProvider(config.server.classifier.max_input_chars));
+  return new Router(config, undefined, { latency: fast });
 }
 
 function errorResponse(message: string, status: 400 | 401, type: string): Response {

@@ -40,6 +40,7 @@ describe("cost estimate", () => {
       inputTokens: 1000,
       classifier: { ...defaultClassifierResult(), expectedOutputTokens: 500 },
       features: {},
+      signalProvider: "stub",
     };
     // 1.0*2 + 0.5*8 = 6
     expect(estimateCost(model, analysis)).toBeCloseTo(6, 6);

@@ -149,7 +149,13 @@ smaller input window are trades the eval harness must arbitrate; a `X-Router-Sig
 lets callers opt out; asynchronous classification removes it from the hot path entirely but
 depends on [ADR 0005](decisions/0005-offline-ml-module.md).
 
-Layer 1 is unblocked and worth doing on its own.
+**Layer 3 is done:** `latency` now uses a fast signal provider (RouteLLM ~250ms if a sidecar
+is configured, else the heuristic ~0ms) instead of the ~1s classifier, via a per-strategy
+override on the `SignalProvider` seam. Layer 1 (cache + `max_tokens` + hoisted client) is
+still unblocked and worth doing on its own.
+
+A measurement note worth keeping: RouteLLM was almost dismissed as ~2.2s. That was a Windows
+Docker Desktop published-port artifact — the real container-to-container path is ~250ms.
 
 ---
 

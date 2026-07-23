@@ -1,6 +1,6 @@
 # ADR 0012 — Reducing Classifier Latency on the Hot Path
 
-- **Status:** Proposed (plan; not yet implemented)
+- **Status:** Partially accepted — Layer 3 (per-strategy signal selection) implemented; Layers 1, 2, 4 proposed
 - **Date:** 2026-07-22
 - **Context repo:** `llm-model-router`
 
@@ -13,6 +13,8 @@ on this deployment:
 | Path | Duration |
 |---|---|
 | Bypass (routing skipped entirely) | **0–2 ms** |
+| Routed, heuristic signal | **~0–2 ms** (deterministic, no network) |
+| Routed, RouteLLM sidecar | **~250 ms** (container-to-container) |
 | Routed, LLM classifier | **802 / 947 / 1199 / 1433 / 1947 / 2081 ms** |
 
 The gap is the whole story. Detection, constraint filtering, scoring and tie-breaking are
@@ -65,13 +67,37 @@ speed without the eval harness arbitrating.**
    the tail. Eight seconds is a long time to wait before falling back to a heuristic that
    would have answered instantly.
 
-### Layer 3 — Let the caller opt out
+### Layer 3 — Choose the signal provider per strategy — **implemented**
 
-7. **A signal-selection header**, e.g. `X-Router-Signal: heuristic`, and/or automatically
-   skipping the LLM classifier for `strategy: latency`. Spending ~1 s of wall clock to
-   choose between models whose latencies differ by a few hundred milliseconds is
-   self-defeating; the caller is better placed than we are to make that call, and the header
-   contract already exists to express it.
+7. **The `latency` strategy no longer uses the LLM classifier.** Spending ~1 s to choose
+   between models whose latency differs by a few hundred ms is self-defeating — and
+   `latency` weights the classifier-derived signals at only 0.3–0.5 (the deterministic
+   `latency` rule dominates at 3.0), so the expensive call barely moves the result. It now
+   uses a fast provider instead:
+
+   - **RouteLLM (~250 ms)** when a sidecar is configured — a real trained difficulty signal,
+   - **the offline heuristic (~0 ms)** otherwise (e.g. an inspector-only deployment with no
+     sidecar) — never the classifier.
+
+   The mechanism is a per-strategy override on the `SignalProvider` seam: the `Router` takes
+   an optional `{ strategy → analyzeFn }` map and falls back to the default for any strategy
+   not listed. Every other strategy keeps the classifier, where complexity/reasoning carry
+   real weight. `signalProvider` is surfaced in `/v1/router/explain` and the demo so a
+   decision can be traced to the signal that produced it.
+
+   > **Measurement correction.** An earlier draft of this ADR reported RouteLLM at ~2.2 s and
+   > concluded it was too slow for this path. That number was a **Windows Docker Desktop
+   > artifact** — measured through the published host port, whose vpnkit proxy adds ~2 s per
+   > connection. The path the router actually uses is container-to-container over the Docker
+   > network, measured at **~250 ms** (the win-rate computation itself is 0.16–0.39 s, and
+   > `/score` from inside the container is ~0.2 s). RouteLLM is a *fast* signal source, ~4×
+   > quicker than the classifier; the sidecar never needed fixing. The lesson is banked in
+   > the negatives below: benchmark the path production takes, not the one that is convenient
+   > to `curl`.
+
+   A future refinement — a per-request `X-Router-Signal: heuristic` header — remains open, so
+   a caller can force the fast path on any strategy. The header contract (ADR 0002) already
+   has room for it.
 
 ### Layer 4 — Take it off the hot path entirely
 
@@ -104,8 +130,13 @@ speed without the eval harness arbitrating.**
   change invalidates rather than lingers.
 - **Layer 2 trades accuracy for speed**, and the evidence that this is a real risk is
   already in hand rather than hypothetical.
-- **Layer 3 lets callers silently opt into worse routing**, and a header that makes things
-  faster will get set by default in someone's client wrapper and never revisited.
+- **Layer 3 changes routing for `latency` requests**: a different signal provider can rank
+  differently. In practice the change is small because `latency` down-weights those signals,
+  but it is a real behaviour change and belongs in the eval before/after, not asserted.
+- **Measure the path production takes.** RouteLLM was nearly written off as ~2.2 s when the
+  real figure was ~250 ms — the 2.2 s was a Windows host port-forward artifact. A convenient
+  benchmark measured the wrong hop. Any future latency claim must be taken on the
+  container-to-container / in-process path, never through Docker Desktop's published port.
 - **Layer 4 changes the semantics of a routing decision** — from "informed by this request"
   to "informed by requests like it". That is a different product, and should be an ADR of
   its own if seriously pursued.
@@ -118,8 +149,12 @@ speed without the eval harness arbitrating.**
       routing time in Application Insights ([ADR 0008](0008-observability.md)).
 - [ ] Benchmark alternative classifier models on **both** latency and judged accuracy.
 - [ ] Sweep `max_input_chars` (8000 → 2000 → 1000) against the eval set.
-- [ ] `X-Router-Signal` header (ADR 0002 contract update).
-- [ ] Decide whether `strategy: latency` should imply heuristic signals by default.
+- [x] Per-strategy signal selection; `latency` → RouteLLM (if configured) or heuristic,
+      never the classifier. Surfaced as `signalProvider` in explain + demo.
+- [ ] `X-Router-Signal` header for per-request override (ADR 0002 contract update).
+- [ ] Benchmark RouteLLM vs. the classifier on judged accuracy — if RouteLLM's ~250 ms
+      signal is close, it is a candidate to become the default provider everywhere, not just
+      for `latency` (ties into the open [ADR 0006](0006-leveraging-learned-routing.md) shadow-eval).
 
 ## Related
 
