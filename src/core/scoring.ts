@@ -114,6 +114,7 @@ export function selectByObjective(
   scored: ScoredModel[],
   objective: Objective,
   delta: number,
+  tieEpsilon: number,
 ): ScoredModel[] {
   if (scored.length === 0) return scored;
   const inFront = frontierIds(scored, delta);
@@ -124,7 +125,18 @@ export function selectByObjective(
   } else if (objective === "latency") {
     frontier.sort((a, b) => a.model.avgLatencyMs - b.model.avgLatencyMs || b.score - a.score || byId(a, b));
   } else {
-    frontier.sort((a, b) => b.score - a.score || blended(a.model) - blended(b.model) || byId(a, b));
+    // `best`: within the tight tie-band of the top Q, take the CHEAPEST — those
+    // Q differences are noise, so don't pay more for them. Below the band, fall
+    // back to Q order (a model must be >tie_epsilon better to cost more).
+    const qmax = scored[0]!.score;
+    const tie = qmax > 0 ? qmax * (1 - tieEpsilon) : -Infinity;
+    frontier.sort((a, b) => {
+      const at = a.score >= tie;
+      const bt = b.score >= tie;
+      if (at !== bt) return at ? -1 : 1;
+      if (at) return blended(a.model) - blended(b.model) || b.score - a.score || byId(a, b);
+      return b.score - a.score || byId(a, b);
+    });
   }
   return [...frontier, ...rest];
 }
@@ -135,6 +147,6 @@ export function topReason(top: ScoredModel, strategy: Strategy, objective: Objec
       ? "cheapest in the capability frontier"
       : objective === "latency"
         ? "fastest in the capability frontier"
-        : "top of the capability frontier";
+        : "cheapest of the statistically-top models";
   return `${strategy}: ${how} (capability ${top.score.toFixed(2)})`;
 }

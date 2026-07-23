@@ -178,7 +178,9 @@ export class Router {
       const scored = scoreModels(
         candidates, ALL_RULES, analysis.features, this.config.routing.capabilityWeights,
       );
-      const ranked = selectByObjective(scored, objective, this.config.routing.frontierDelta);
+      const ranked = selectByObjective(
+        scored, objective, this.config.routing.frontierDelta, this.config.routing.tieEpsilon,
+      );
       const picked = this.pickRoutable(ranked, req.options.strategy, objective);
       const top = picked.top;
 
@@ -289,7 +291,9 @@ export class Router {
       eligibleModels, ALL_RULES, analysis.features, this.config.routing.capabilityWeights,
     );
     const inFrontier = frontierIds(scoredRaw, this.config.routing.frontierDelta);
-    const scored = selectByObjective(scoredRaw, objective, this.config.routing.frontierDelta);
+    const scored = selectByObjective(
+      scoredRaw, objective, this.config.routing.frontierDelta, this.config.routing.tieEpsilon,
+    );
     const outTokens = analysis.classifier.expectedOutputTokens;
     // Trace the number that drove the task_type rule: the model's provenanced
     // competency for the detected task, or a tier-derived fallback (ADR 0010).

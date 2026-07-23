@@ -12,9 +12,15 @@ capability_weights:
   data_sensitivity: 0.3
 
 # Frontier (top cluster) width: a model is in the frontier when
-# Q >= Q_max * (1 - frontier_delta). Tight → value/fast ≈ best; loose → they may
-# trade a little capability for savings/speed. The one tuning knob.
+# Q >= Q_max * (1 - frontier_delta). This is the "good enough" band used by
+# value/fast. Loose → they may trade a little capability for savings/speed.
 frontier_delta: 0.12
+
+# Tie-band width for `best`: models within Q_max * (1 - tie_epsilon) of the top
+# are treated as statistically TIED (Q differences this small are benchmark
+# noise), so `best` takes the cheapest of them rather than paying more for a
+# meaningless edge. It only pays up when a model is >tie_epsilon better.
+tie_epsilon: 0.05
 
 # Each strategy → the objective it optimizes within the frontier.
 strategies:

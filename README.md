@@ -259,9 +259,13 @@ A **strategy chooses the objective within the frontier** (`config/strategies.yam
 
 | Strategy | Optimises within the frontier | Intent |
 | --- | --- | --- |
-| `best` | max capability `Q` | the strongest model, price-blind |
+| `best` | cheapest within the *tie-band* of the top `Q` | the strongest, without overpaying for noise |
 | `value` *(default)* | min blended cost | strongest that's also economical |
 | `fast` | min latency | soonest among the genuinely-capable |
+
+`best` isn't a hard argmax: models within `tie_epsilon` (≈5%) of the top `Q` are treated as
+statistically tied (that gap is benchmark noise), so it takes the **cheapest** of them — a
+model must be *meaningfully* better to cost more.
 
 Because `complexity` scores `tier·(2v−1)` — negative for high tier at low difficulty — `Q` is
 difficulty-aware for free: a trivial prompt's frontier is the *cheap* models, so even `best`

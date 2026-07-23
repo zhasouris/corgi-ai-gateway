@@ -49,11 +49,17 @@ near the top.
 
 | Strategy | Objective within the frontier | Intent |
 |---|---|---|
-| **`best`** | max `Q` (the frontier top) | the strongest model, price-blind |
+| **`best`** | cheapest within the **tie-band** of the top `Q` | the strongest, without overpaying for noise |
 | **`value`** *(default)* | min blended cost | strongest that's also economical |
 | **`fast`** | min `avg_latency_ms` | soonest among the genuinely-capable |
 
-`best` is trivially the frontier top; `value`/`fast` re-order the frontier by cost/latency.
+**`best` is not a hard argmax on `Q`.** A pure max would pay 2× for a sub-1% capability
+edge that is almost certainly benchmark noise (our competency is mixed-confidence). So `best`
+treats models within `tie_epsilon` (default **0.05**) of `Q_max` as **statistically tied** and
+takes the **cheapest** of them; a model must be *more than* `tie_epsilon` better to justify
+costing more. There are thus two bands: `frontier_delta` (~0.12, "good enough", for
+`value`/`fast`) and the tighter `tie_epsilon` (~0.05, "tied at the top", for `best`).
+`value`/`fast` re-order the whole frontier by cost/latency.
 Models outside the frontier follow, ordered by `Q`, so the ranked list stays complete and
 `pickRoutable` (walk to the first model with an API key, [ADR 0007](0007-per-model-api-keys.md))
 is unchanged.

@@ -96,6 +96,7 @@ const serverSchema = z.object({
 const strategiesSchema = z.object({
   capability_weights: z.record(z.number()),
   frontier_delta: z.number().min(0).max(1).default(0.12),
+  tie_epsilon: z.number().min(0).max(1).default(0.05),
   strategies: z.record(z.enum(OBJECTIVES)),
 });
 
@@ -133,6 +134,8 @@ export interface RoutingConfig {
   capabilityWeights: Record<string, number>;
   /** Frontier width: a model is in the frontier when Q >= Q_max * (1 - delta). */
   frontierDelta: number;
+  /** Tie-band width for `best`: Q within tie_epsilon of the top counts as tied. */
+  tieEpsilon: number;
   /** Each strategy's objective within the frontier. */
   objectives: Record<string, Objective>;
 }
@@ -300,6 +303,7 @@ export function getConfig(): AppConfig {
     routing: {
       capabilityWeights: strategyBook.capability_weights,
       frontierDelta: strategyBook.frontier_delta,
+      tieEpsilon: strategyBook.tie_epsilon,
       objectives: strategyBook.strategies,
     },
     catalog,
