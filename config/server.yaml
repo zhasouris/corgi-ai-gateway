@@ -4,10 +4,20 @@
 # Default routing strategy when the caller sends no X-Router-Strategy header.
 default_strategy: balanced
 
+# OAuth 2.0 client-credentials resource-server validation (ADR 0015). Callers
+# obtain a JWT from an OIDC provider and present it as `Authorization: Bearer`.
+# The gateway validates it — issuer, audience, signature (via JWKS), expiry, and
+# optionally a required scope. Provider-agnostic: works with Entra ID, Auth0,
+# Okta, Keycloak, Cognito. issuer/audience/scope may also be set from the
+# environment (AUTH_ISSUER / AUTH_AUDIENCE / AUTH_REQUIRED_SCOPE / AUTH_JWKS_URI).
 auth:
-  # When false, the proxy accepts unauthenticated requests (local dev only).
-  # When true, clients must present a bearer token listed in ROUTER_API_KEYS.
+  # false = open (local dev only). true + no issuer = fail-closed (every /v1
+  # request is 401) — this is how the demo-only deployment stays closed.
   enabled: true
+  issuer: "" # e.g. https://login.example.com/  — iss must match; JWKS discovered here
+  audience: "" # e.g. api://corgi-ai-gateway    — aud must match
+  required_scope: "" # optional, e.g. router.invoke
+  jwks_uri: "" # optional override; else <issuer>/.well-known/jwks.json
 
 classifier:
   # The pinned classifier model that produces subjective/predictive features

@@ -2,9 +2,9 @@
  * Demo-only posture: publish the decision inspector and nothing else.
  *
  * The deployment achieves this by shipping a classifier key, no provider keys,
- * and *no* ROUTER_API_KEYS. That last part is load-bearing and non-obvious —
- * an empty key set does not disable auth, it means no bearer token can ever
- * match, so the whole /v1 surface answers 401 while /demo and
+ * and *no configured OAuth issuer*. That last part is load-bearing and
+ * non-obvious (ADR 0015): with auth enabled but no issuer to validate against,
+ * the gateway fails closed — the whole /v1 surface answers 401 while /demo and
  * /v1/router/explain keep working because they are registered ahead of the
  * auth middleware.
  *
@@ -13,9 +13,6 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-
-// Deliberately empty — the entire point of this suite.
-process.env.ROUTER_API_KEYS = "";
 
 import { createApp, type AppDeps } from "../src/app.js";
 import { getConfig, resetConfigCache } from "../src/config.js";
@@ -38,15 +35,16 @@ function deps(): AppDeps {
 }
 
 beforeEach(() => {
-  process.env.ROUTER_API_KEYS = "";
+  // No issuer configured anywhere — the fail-closed condition.
+  delete process.env.AUTH_ISSUER;
+  delete process.env.AUTH_ENABLED;
   resetConfigCache();
 });
 
 describe("demo-only deployment", () => {
-  it("has no usable proxy tokens", () => {
-    expect(getConfig().secrets.routerApiKeys.size).toBe(0);
-    // Auth is still ON — that is why the empty set closes the surface.
+  it("is fail-closed: auth on, no issuer to validate against", () => {
     expect(getConfig().server.auth.enabled).toBe(true);
+    expect(getConfig().server.auth.issuer).toBe("");
   });
 
   it("serves the inspector page", async () => {
@@ -80,12 +78,13 @@ describe("demo-only deployment", () => {
     expect(res.status).toBe(401);
   });
 
-  it("closes /v1/chat/completions even to a plausible token", async () => {
+  it("closes /v1/chat/completions even to a plausible-looking token", async () => {
+    // With no issuer, validation never even runs — it fails closed first.
     const res = await createApp(deps()).request("/v1/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        Authorization: "Bearer anything-at-all",
+        Authorization: "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ4In0.notreal",
       },
       body: JSON.stringify({ model: "auto", messages: [{ role: "user", content: "hi" }] }),
     });

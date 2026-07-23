@@ -5,7 +5,7 @@
 
 import { swaggerUI } from "@hono/swagger-ui";
 import { Hono, type Context } from "hono";
-import { makeAuth } from "./auth.js";
+import { makeAuth, type KeyResolver } from "./auth.js";
 import { getConfig, type AppConfig } from "./config.js";
 import { makeAnalyze, type AnalyzeFn } from "./core/analysis.js";
 import { NoEligibleModelError, Router } from "./core/router.js";
@@ -34,6 +34,8 @@ export interface AppDeps {
   config: AppConfig;
   router: Router;
   forwarder: ForwarderLike;
+  /** Optional JWT key resolver — tests inject a local JWKS (ADR 0015). */
+  authKeyResolver?: KeyResolver;
 }
 
 function buildDeps(): AppDeps {
@@ -212,7 +214,7 @@ export function createApp(deps: AppDeps = buildDeps()): Hono {
   }
 
   // Auth guards the rest of the /v1 surface (models, chat completions).
-  app.use("/v1/*", makeAuth(config));
+  app.use("/v1/*", makeAuth(config, deps.authKeyResolver));
 
   // Kept in the strict OpenAI shape — it is the drop-in compatibility surface,
   // so routing metadata belongs on /v1/router/models rather than here.

@@ -27,7 +27,23 @@ const providerSchema = z.object({
 
 const serverSchema = z.object({
   default_strategy: z.enum(STRATEGIES).default("balanced"),
-  auth: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
+  // OAuth 2.0 client-credentials resource-server validation (ADR 0015).
+  // `enabled: false` opens /v1 for local dev. When enabled, every /v1 request
+  // must carry a valid JWT: signed by the issuer's JWKS, `iss`/`aud` matching,
+  // unexpired, and (if set) carrying `required_scope`. Fail-closed — no issuer
+  // configured means nothing validates, so /v1 answers 401 (the demo-only
+  // deployment's closed posture).
+  auth: z
+    .object({
+      enabled: z.boolean().default(true),
+      issuer: z.string().default(""),
+      audience: z.string().default(""),
+      required_scope: z.string().default(""),
+      // Optional explicit JWKS URL; otherwise derived from the issuer's
+      // OIDC discovery document.
+      jwks_uri: z.string().default(""),
+    })
+    .default({}),
   classifier: z
     .object({
       enabled: z.boolean().default(true),
@@ -101,7 +117,6 @@ export interface AppConfig {
   strategies: Record<string, Record<string, number>>;
   catalog: ModelDescriptor[];
   secrets: {
-    routerApiKeys: Set<string>;
     classifierApiKey?: string;
   };
   providerApiKey(provider: string): string | undefined;
@@ -143,6 +158,15 @@ function applyEnvOverrides(server: ServerConfig): ServerConfig {
   const routellm = boolEnv("ROUTELLM_ENABLED");
   if (routellm !== undefined) server.routellm.enabled = routellm;
   if (process.env.ROUTELLM_URL) server.routellm.url = process.env.ROUTELLM_URL;
+
+  // OAuth resource-server config (ADR 0015) — non-secret, so it can come from
+  // the environment on a hosted deployment. Issuer/audience/scope are public.
+  const authEnabled = boolEnv("AUTH_ENABLED");
+  if (authEnabled !== undefined) server.auth.enabled = authEnabled;
+  if (process.env.AUTH_ISSUER) server.auth.issuer = process.env.AUTH_ISSUER;
+  if (process.env.AUTH_AUDIENCE) server.auth.audience = process.env.AUTH_AUDIENCE;
+  if (process.env.AUTH_REQUIRED_SCOPE) server.auth.required_scope = process.env.AUTH_REQUIRED_SCOPE;
+  if (process.env.AUTH_JWKS_URI) server.auth.jwks_uri = process.env.AUTH_JWKS_URI;
 
   return server;
 }
@@ -202,13 +226,6 @@ export function getConfig(): AppConfig {
     throw new Error(`classifier provider '${server.classifier.provider}' is not configured`);
   }
 
-  const routerApiKeys = new Set(
-    (process.env.ROUTER_API_KEYS ?? "")
-      .split(",")
-      .map((k) => k.trim())
-      .filter(Boolean),
-  );
-
   const catalog = catalogRaw.models.map(toDescriptor);
   const byId = new Map(catalog.map((m) => [m.id, m]));
 
@@ -217,7 +234,6 @@ export function getConfig(): AppConfig {
     strategies: strategyBook.strategies,
     catalog,
     secrets: {
-      routerApiKeys,
       // `|| undefined` so an empty env var (e.g. `CLASSIFIER_API_KEY=`) is
       // treated as absent — otherwise `?? fallback` would keep the empty string.
       classifierApiKey: process.env.CLASSIFIER_API_KEY || undefined,

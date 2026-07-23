@@ -8,19 +8,22 @@
  */
 
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-process.env.ROUTER_API_KEYS = "test-key";
+import { authResolver, bearer, useTestAuthEnv } from "./authtest.js";
+useTestAuthEnv();
 
 import { createApp, type AppDeps } from "../src/app.js";
 import { getConfig, resetConfigCache } from "../src/config.js";
 import { makeAnalyze } from "../src/core/analysis.js";
 import { Router } from "../src/core/router.js";
 import { HeuristicSignalProvider } from "../src/core/signal.js";
+import type { KeyResolver } from "../src/auth.js";
 import type { UpstreamResponse } from "../src/providers/forwarder.js";
 
 const SAVED = { ...process.env };
 const FIXTURE_DIR = join(process.cwd(), "test", "fixtures", "config");
+let resolver: KeyResolver;
 
 interface AvailabilityBody {
   data: { id: string; provider: string; available: boolean; capabilities: string[] }[];
@@ -37,6 +40,7 @@ function deps(): AppDeps {
         return { status: 200, headers: {}, body: "{}" };
       },
     },
+    authKeyResolver: resolver,
   };
 }
 
@@ -45,9 +49,12 @@ async function fetchAvailability(headers: Record<string, string> = {}) {
   return { res, body: res.status === 200 ? ((await res.json()) as AvailabilityBody) : null };
 }
 
+beforeAll(async () => {
+  resolver = await authResolver();
+});
+
 beforeEach(() => {
   process.env.ROUTER_CONFIG_DIR = FIXTURE_DIR;
-  process.env.ROUTER_API_KEYS = "test-key";
   delete process.env.OPENAI_API_KEY;
   delete process.env.FIXTURE_MODEL_KEY;
   resetConfigCache();
@@ -111,7 +118,7 @@ describe("/v1/router/models", () => {
     expect(res.status).toBe(401);
 
     const authed = await createApp(deps()).request("/v1/router/models", {
-      headers: { Authorization: "Bearer test-key" },
+      headers: await bearer(),
     });
     expect(authed.status).toBe(200);
   });
@@ -124,9 +131,8 @@ describe("/v1/router/models", () => {
   });
 
   it("leaves /v1/models in the strict OpenAI shape", async () => {
-    const res = await createApp(deps()).request("/v1/models", {
-      headers: { Authorization: "Bearer test-key" },
-    });
+    // Fixture disables auth, so this passes regardless of the header.
+    const res = await createApp(deps()).request("/v1/models");
     const json = (await res.json()) as { data: Record<string, unknown>[] };
     expect(Object.keys(json.data[0]!).sort()).toEqual(["id", "object", "owned_by"]);
   });

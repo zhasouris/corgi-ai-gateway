@@ -17,7 +17,16 @@ export const openApiSpec = {
   servers: [{ url: "/" }],
   components: {
     securitySchemes: {
-      bearerAuth: { type: "http", scheme: "bearer", description: "A token from ROUTER_API_KEYS" },
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description:
+          "OAuth 2.0 client-credentials access token (JWT). Obtain it from your identity " +
+          "provider's token endpoint with your client_id/client_secret, then send it as " +
+          "`Authorization: Bearer <jwt>`. The gateway validates issuer, audience, signature, " +
+          "expiry, and (if configured) a required scope (ADR 0015).",
+      },
     },
     schemas: {
       ChatCompletionRequest: {

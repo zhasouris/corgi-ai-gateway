@@ -6,16 +6,19 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 
-// Auth needs a known proxy key; set before config is read.
-process.env.ROUTER_API_KEYS = "test-key";
+// Point the config's auth block at the test issuer before config is read.
+import { authResolver, bearer, useTestAuthEnv } from "./authtest.js";
+useTestAuthEnv();
 
 import { createApp, type AppDeps } from "../src/app.js";
 import { getConfig, resetConfigCache } from "../src/config.js";
 import { Router } from "../src/core/router.js";
+import type { KeyResolver } from "../src/auth.js";
 import { defaultClassifierResult, type RequestAnalysis, type RoutingRequest } from "../src/types.js";
 import type { UpstreamResponse } from "../src/providers/forwarder.js";
 
-const AUTH = { Authorization: "Bearer test-key" };
+let AUTH: Record<string, string>;
+let resolver: KeyResolver;
 
 class FakeForwarder {
   lastBody: Record<string, unknown> | null = null;
@@ -42,12 +45,19 @@ async function stubAnalyze(req: RoutingRequest): Promise<RequestAnalysis> {
 function makeDeps(): { deps: AppDeps; fake: FakeForwarder } {
   const config = getConfig();
   const fake = new FakeForwarder();
-  const deps: AppDeps = { config, router: new Router(config, stubAnalyze), forwarder: fake };
+  const deps: AppDeps = {
+    config,
+    router: new Router(config, stubAnalyze),
+    forwarder: fake,
+    authKeyResolver: resolver,
+  };
   return { deps, fake };
 }
 
-beforeAll(() => {
+beforeAll(async () => {
   resetConfigCache();
+  resolver = await authResolver();
+  AUTH = await bearer();
 });
 
 describe("endpoint", () => {
@@ -117,7 +127,12 @@ describe("endpoint", () => {
         return { status: 200, headers: { "content-type": "application/json" }, body: "{}" };
       },
     };
-    const deps: AppDeps = { config, router: new Router(config, stubAnalyze), forwarder: slow };
+    const deps: AppDeps = {
+      config,
+      router: new Router(config, stubAnalyze),
+      forwarder: slow,
+      authKeyResolver: resolver,
+    };
 
     const start = Date.now();
     const res = await createApp(deps).request("/v1/chat/completions", {
@@ -148,5 +163,21 @@ describe("endpoint", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as { data: unknown[] };
     expect(json.data.length).toBeGreaterThan(0);
+  });
+
+  it("rejects an expired token", async () => {
+    const { deps } = makeDeps();
+    const res = await createApp(deps).request("/v1/models", {
+      headers: await bearer({ expired: true }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a token for the wrong audience", async () => {
+    const { deps } = makeDeps();
+    const res = await createApp(deps).request("/v1/models", {
+      headers: await bearer({ audience: "api://someone-else" }),
+    });
+    expect(res.status).toBe(401);
   });
 });

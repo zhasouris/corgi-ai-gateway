@@ -9,9 +9,10 @@
  */
 
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-process.env.ROUTER_API_KEYS = "test-key";
+import { authResolver, bearer, useTestAuthEnv } from "./authtest.js";
+useTestAuthEnv();
 
 import { createApp, type AppDeps } from "../src/app.js";
 import { getConfig, resetConfigCache } from "../src/config.js";
@@ -19,11 +20,13 @@ import { makeAnalyze } from "../src/core/analysis.js";
 import { Router } from "../src/core/router.js";
 import { HeuristicSignalProvider } from "../src/core/signal.js";
 import { clearProbeCache, probeProviders } from "../src/probe.js";
+import type { KeyResolver } from "../src/auth.js";
 import type { ForwardArgs, UpstreamResponse } from "../src/providers/forwarder.js";
 
 const SAVED = { ...process.env };
 const FIXTURE_DIR = join(process.cwd(), "test", "fixtures", "config");
-const AUTH = { Authorization: "Bearer test-key" };
+let AUTH: Record<string, string>;
+let resolver: KeyResolver;
 
 /** Answers with whatever status/body the test asked for, and records calls. */
 function fakeForwarder(status: number, body = "{}") {
@@ -39,12 +42,21 @@ function fakeForwarder(status: number, body = "{}") {
 
 function deps(forwarder: { forward(a: ForwardArgs): Promise<UpstreamResponse> }): AppDeps {
   const config = getConfig();
-  return { config, router: new Router(config, makeAnalyze(new HeuristicSignalProvider())), forwarder };
+  return {
+    config,
+    router: new Router(config, makeAnalyze(new HeuristicSignalProvider())),
+    forwarder,
+    authKeyResolver: resolver,
+  };
 }
+
+beforeAll(async () => {
+  resolver = await authResolver();
+  AUTH = await bearer();
+});
 
 beforeEach(() => {
   process.env.ROUTER_CONFIG_DIR = FIXTURE_DIR;
-  process.env.ROUTER_API_KEYS = "test-key";
   process.env.OPENAI_API_KEY = "present";
   resetConfigCache();
   clearProbeCache();
