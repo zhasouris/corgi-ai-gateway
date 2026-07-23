@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-20
-- **Context repo:** `corgi-gateway`
+- **Context repo:** `corgi-ai-gateway`
 
 ## Context
 

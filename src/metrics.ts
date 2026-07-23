@@ -20,7 +20,7 @@ let instruments: Instruments | undefined;
 
 function get(): Instruments {
   if (!instruments) {
-    const meter = metrics.getMeter("corgi-gateway");
+    const meter = metrics.getMeter("corgi-ai-gateway");
     instruments = {
       requests: meter.createCounter("router.requests", {
         description: "Routed requests by strategy/model/provider",

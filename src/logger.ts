@@ -23,7 +23,7 @@ function emit(
   if (attributes) {
     for (const [k, v] of Object.entries(attributes)) if (v !== undefined) clean[k] = v;
   }
-  logs.getLogger("corgi-gateway").emit({
+  logs.getLogger("corgi-ai-gateway").emit({
     severityNumber,
     severityText,
     body: message,

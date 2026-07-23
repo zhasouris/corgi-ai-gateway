@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// corgi-gateway — Azure infrastructure (everything except the app itself).
+// corgi-ai-gateway — Azure infrastructure (everything except the app itself).
 //
 // Split from app.bicep on purpose: the container app can't be created until an
 // image exists in the registry, and the registry is created here. Deploy this
@@ -20,7 +20,7 @@ param namePrefix string = 'llmrouter'
 param logRetentionDays int = 30
 
 param tags object = {
-  application: 'corgi-gateway'
+  application: 'corgi-ai-gateway'
   managedBy: 'bicep'
 }
 

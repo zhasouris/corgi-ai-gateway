@@ -57,7 +57,7 @@ const serverSchema = z.object({
     .default({}),
   telemetry: z
     .object({
-      service_name: z.string().default("corgi-gateway"),
+      service_name: z.string().default("corgi-ai-gateway"),
       console_export: z.boolean().default(true),
       otlp: z
         .object({

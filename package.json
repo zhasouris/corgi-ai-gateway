@@ -1,5 +1,5 @@
 {
-  "name": "corgi-gateway",
+  "name": "corgi-ai-gateway",
   "version": "0.1.0",
   "description": "OpenAI-compatible LLM routing proxy that picks the best model per request",
   "type": "module",

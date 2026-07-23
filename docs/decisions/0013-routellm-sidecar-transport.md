@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (decision to keep the HTTP sidecar; local-embedding optimization is an open follow-up)
 - **Date:** 2026-07-23
-- **Context repo:** `corgi-gateway`
+- **Context repo:** `corgi-ai-gateway`
 
 ## Context
 

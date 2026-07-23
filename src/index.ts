@@ -16,5 +16,5 @@ const app = createApp();
 const port = Number(process.env.PORT ?? 8000);
 
 serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, (info) => {
-  console.log(`corgi-gateway listening on :${info.port}`);
+  console.log(`corgi-ai-gateway listening on :${info.port}`);
 });

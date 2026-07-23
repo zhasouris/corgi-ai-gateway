@@ -1,6 +1,6 @@
 # Deploying to Azure
 
-Deploys `corgi-gateway` to **Azure Container Apps**, publicly reachable over
+Deploys `corgi-ai-gateway` to **Azure Container Apps**, publicly reachable over
 HTTPS, with **no gateway or app registration in front of it**.
 
 ```

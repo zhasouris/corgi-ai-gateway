@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (plan; not yet implemented)
 - **Date:** 2026-07-22
-- **Context repo:** `corgi-gateway`
+- **Context repo:** `corgi-ai-gateway`
 
 ## Context
 

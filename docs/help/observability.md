@@ -29,7 +29,7 @@ the active trace/span id so they correlate with the trace in the backend.
 
 ```yaml
 telemetry:
-  service_name: corgi-gateway
+  service_name: corgi-ai-gateway
   console_export: true          # print traces/metrics/logs to stdout (dev)
   otlp:
     enabled: false              # send to an OTLP collector

@@ -2,7 +2,7 @@
 
 - **Status:** Partially accepted — Layer 3 (per-strategy signal selection) implemented; Layers 1, 2, 4 proposed
 - **Date:** 2026-07-22
-- **Context repo:** `corgi-gateway`
+- **Context repo:** `corgi-ai-gateway`
 
 ## Context
 

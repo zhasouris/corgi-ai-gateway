@@ -39,7 +39,7 @@ param minReplicas int = 1
 param maxReplicas int = 1
 
 param tags object = {
-  application: 'corgi-gateway'
+  application: 'corgi-ai-gateway'
   component: 'routellm-sidecar'
   managedBy: 'bicep'
 }

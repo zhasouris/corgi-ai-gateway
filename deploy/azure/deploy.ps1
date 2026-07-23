@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Deploy corgi-gateway to Azure Container Apps.
+  Deploy corgi-ai-gateway to Azure Container Apps.
 
 .DESCRIPTION
   Three phases, each independently re-runnable:
@@ -199,7 +199,7 @@ if (-not $ImageTag) {
     Write-Note 'Built by Azure from this source tree - no local Docker required.'
     az acr build `
         --registry $acrName `
-        --image "corgi-gateway:$ImageTag" `
+        --image "corgi-ai-gateway:$ImageTag" `
         --file (Join-Path $repoRoot 'Dockerfile') `
         --only-show-errors `
         $repoRoot
@@ -209,7 +209,7 @@ else {
     Write-Step "Skipping build, using existing tag: $ImageTag"
 }
 
-$image = "$acrLoginServer/corgi-gateway:$ImageTag"
+$image = "$acrLoginServer/corgi-ai-gateway:$ImageTag"
 
 # --- 2b. the RouteLLM sidecar ----------------------------------------------
 

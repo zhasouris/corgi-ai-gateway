@@ -3,7 +3,7 @@ services:
     build: .
     # Pinned so the container keeps a stable, predictable name across recreates
     # rather than a generated <project>-router-1.
-    container_name: corgi-gateway
+    container_name: corgi-ai-gateway
     ports:
       - "8000:8000"
     # Secrets are read from .env at the repo root (gitignored). Compose passes

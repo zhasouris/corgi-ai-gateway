@@ -8,7 +8,7 @@
 export const openApiSpec = {
   openapi: "3.1.0",
   info: {
-    title: "corgi-gateway",
+    title: "corgi-ai-gateway",
     version: "0.1.0",
     description:
       "OpenAI-compatible routing proxy. Routing is on by default; steer it with " +

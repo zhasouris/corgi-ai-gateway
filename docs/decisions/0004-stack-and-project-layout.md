@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-19
-- **Context repo:** `corgi-gateway` (branch: `feature/typescript-implementation`)
+- **Context repo:** `corgi-ai-gateway` (branch: `feature/typescript-implementation`)
 
 ## Context
 
@@ -66,7 +66,7 @@ OTLP; keys live in repo-root `.env`.
 ### Project layout
 
 ```
-corgi-gateway/
+corgi-ai-gateway/
 ├── docs/decisions/          # ADRs
 ├── package.json  tsconfig.json  vitest.config.ts
 ├── config/                  # server.yaml, models.yaml, strategies.yaml
