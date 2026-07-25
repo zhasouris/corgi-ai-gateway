@@ -138,10 +138,19 @@ genuine per-request model decision, you generally end up reaching for commercial
 > **A drop-in OpenAI-compatible proxy with a pluggable difficulty/cost/quality scoring
 > engine and a clean header-based control surface — self-hosted, and yours.**
 
-It's deliberately designed so the routing *brain* and the *gateway* are separable: the
-runtime stays lean and forwards fast, while the expensive ML that learns from your traffic
-runs **offline** and feeds results back in as data — so a trained router (RouteLLM-style)
-can slot in behind the same interface without touching the hot path.
+Corgi's differentiator is that it makes a real, multi-signal, per-request model decision
+inside a drop-in OpenAI-compatible proxy — not just load-balancing or single-axis complexity
+tiering. Every request is reduced to hard capability constraints (vision, tools, JSON, audio,
+token count) plus predictive signals (complexity, reasoning depth, task type, data
+sensitivity), and each eligible model is scored and ranked under a "frontier-then-optimize"
+brain: capability is scored first, the top cluster is taken, then one objective — `best`,
+`value`, or `fast` — is optimized within it, so price and latency never drag down a genuinely
+stronger model. The whole decision is controlled by `X-Router-*` headers that never touch the
+OpenAI payload, is fully inspectable via a `/router/explain` trace, and — unlike routers that
+assert their quality — is measured against gold cases and LLM-judged ground truth by a
+built-in eval harness. And because the routing brain sits behind a pluggable `SignalProvider`
+interface (heuristic, cheap-LLM classifier, or a trained RouteLLM sidecar), the expensive ML
+can improve offline from your telemetry without ever touching the hot path.
 
 ### Where it's useful
 
