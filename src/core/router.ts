@@ -100,13 +100,13 @@ export class Router {
         top,
         // Reasons are emitted as an HTTP header (X-Router-Reason), so keep them
         // plain ASCII rather than relying on the header-safety fold.
-        reason: `${topReason(top, strategy, objective)} - unroutable: no API key for ${top.model.provider}`,
+        reason: `${topReason(top, strategy, objective, ranked[1])} - unroutable: no API key for ${top.model.provider}`,
         warnings,
       };
     }
 
     const top = ranked[idx]!;
-    if (idx === 0) return { top, reason: topReason(top, strategy, objective), warnings };
+    if (idx === 0) return { top, reason: topReason(top, strategy, objective, ranked[1]), warnings };
 
     const skipped = ranked.slice(0, idx);
     const best = skipped[0]!;
@@ -119,7 +119,7 @@ export class Router {
     return {
       top,
       reason:
-        `${topReason(top, strategy, objective)} - best routable; ` +
+        `${topReason(top, strategy, objective, ranked[idx + 1])} - best routable; ` +
         `${best.model.id} scored higher (${best.score.toFixed(2)}) but no API key for ${providers}`,
       warnings,
     };
