@@ -141,12 +141,38 @@ export function selectByObjective(
   return [...frontier, ...rest];
 }
 
-export function topReason(top: ScoredModel, strategy: Strategy, objective: Objective): string {
+export function topReason(
+  top: ScoredModel,
+  strategy: Strategy,
+  objective: Objective,
+  runnerUp?: ScoredModel,
+): string {
   const how =
     objective === "cost"
       ? "cheapest in the capability frontier"
       : objective === "latency"
         ? "fastest in the capability frontier"
         : "cheapest of the statistically-top models";
-  return `${strategy}: ${how} (capability ${top.score.toFixed(2)})`;
+  return `${strategy}: ${how} (capability ${top.score.toFixed(2)})${runnerUpNote(top, runnerUp, objective)}`;
+}
+
+/**
+ * Name the runner-up and the attribute that separated it from the pick, so the
+ * reason explains *this model over that one*, not just why the tier was chosen
+ * (P0.2). Kept plain ASCII — the reason is emitted as the X-Router-Reason header.
+ */
+function runnerUpNote(top: ScoredModel, runnerUp: ScoredModel | undefined, objective: Objective): string {
+  if (!runnerUp) return "";
+  const r = runnerUp.model.id;
+  if (objective === "latency") {
+    return `; chosen over ${r} on latency (${top.model.avgLatencyMs} vs ${runnerUp.model.avgLatencyMs} ms)`;
+  }
+  if (objective === "cost") {
+    return `; chosen over ${r} on cost (${blended(top.model).toFixed(2)} vs ${blended(runnerUp.model).toFixed(2)} per 1M)`;
+  }
+  // `best`/capability: capability if it actually separated them, else the cost tie-break.
+  if (top.score - runnerUp.score > 1e-9) {
+    return `; chosen over ${r} on capability (${top.score.toFixed(2)} vs ${runnerUp.score.toFixed(2)})`;
+  }
+  return `; chosen over ${r} on cost (${blended(top.model).toFixed(2)} vs ${blended(runnerUp.model).toFixed(2)} per 1M)`;
 }
