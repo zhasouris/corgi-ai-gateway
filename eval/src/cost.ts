@@ -4,5 +4,6 @@ import type { ModelDescriptor, RequestAnalysis } from "../../src/types.js";
 export function estimateCost(model: ModelDescriptor, analysis: RequestAnalysis): number {
   const inTokens = analysis.inputTokens;
   const outTokens = analysis.classifier.expectedOutputTokens;
-  return (inTokens / 1000) * model.costPer1kInput + (outTokens / 1000) * model.costPer1kOutput;
+  // `costPer1k*` fields hold USD per 1,000,000 tokens (legacy name; ADR 0018).
+  return (inTokens / 1_000_000) * model.costPer1kInput + (outTokens / 1_000_000) * model.costPer1kOutput;
 }

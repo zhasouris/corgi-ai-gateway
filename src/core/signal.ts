@@ -16,6 +16,7 @@ import {
   type ChatMessage,
   type ClassifierResult,
   type RoutingRequest,
+  type SignalCost,
 } from "../types.js";
 import { clamp01 } from "./extractors/types.js";
 import { logWarn } from "../logger.js";
@@ -84,6 +85,7 @@ export class LlmClassifierProvider implements SignalProvider {
       maxRetries: 0,
     });
 
+    const startedAt = Date.now();
     try {
       const resp = await client.chat.completions.create({
         model: cfg.model,
@@ -94,7 +96,10 @@ export class LlmClassifierProvider implements SignalProvider {
         response_format: { type: "json_object" },
         temperature: 0,
       });
-      return parseClassifier(resp.choices[0]?.message?.content ?? "{}");
+      const result = parseClassifier(resp.choices[0]?.message?.content ?? "{}");
+      // Attribute what this call actually cost + how long it took to the decision.
+      result.signalCost = this.priceCall(resp.usage, Date.now() - startedAt);
+      return result;
     } catch (err) {
       logWarn("classifier failed, degrading to defaults", {
         provider: cfg.provider,
@@ -103,6 +108,23 @@ export class LlmClassifierProvider implements SignalProvider {
       });
       return defaultClassifierResult(true);
     }
+  }
+
+  /** Price the classifier call from its token usage × the classifier model's rate. */
+  private priceCall(
+    usage: { prompt_tokens?: number; completion_tokens?: number } | undefined,
+    latencyMs: number,
+  ): SignalCost {
+    const model = this.config.catalog.find((m) => m.id === this.config.server.classifier.model);
+    const inputTokens = usage?.prompt_tokens;
+    const outputTokens = usage?.completion_tokens;
+    // costPer1k* fields hold USD per 1,000,000 tokens (legacy name; ADR 0018).
+    const usd =
+      model && inputTokens != null && outputTokens != null
+        ? (inputTokens / 1_000_000) * model.costPer1kInput +
+          (outputTokens / 1_000_000) * model.costPer1kOutput
+        : 0;
+    return { usd, inputTokens, outputTokens, latencyMs };
   }
 }
 
@@ -140,6 +162,16 @@ const FORMAT = ["reformat", "format as", "convert to", "rewrite", "translate", "
   "as a table", "bullet point", "follow these", "output only", "respond with", "in the format"];
 const LONG = ["write", "essay", "generate", "draft", "implement", "explain", "guide", "tutorial", "report"];
 const SHORT = ["yes or no", "classify", "which", "extract", "label", "one word", "true or false"];
+// Explicit length constraints cap the expected output HARD, overriding the
+// task-based estimate — a "one-line greeting" needs ~10 tokens, not 386. These
+// are checked after the task estimate and win over it.
+const ONE_LINER = ["one line", "one-line", "single line", "one sentence", "one-sentence",
+  "single sentence", "in a sentence", "in a word", "one word", "one-word",
+  "yes or no", "true or false", "tl;dr"];
+const BRIEF = ["briefly", "in brief", "in short", "short answer", "keep it short",
+  "concise", "in a few words"];
+// "in N words" / "N-word" — clamp to roughly that many tokens.
+const WORD_LIMIT = /in (\d{1,3}) words|(\d{1,3})-word/;
 const SENSITIVE = ["password", "ssn", "social security", "credit card", "medical", "patient", "confidential", "api key", "private key"];
 
 const has = (t: string, ks: string[]) => ks.some((k) => t.includes(k));
@@ -185,6 +217,18 @@ export class HeuristicSignalProvider implements SignalProvider {
     if (has(t, SHORT)) expectedOutputTokens = 128;
     expectedOutputTokens = Math.round(expectedOutputTokens * (0.7 + complexity));
 
+    // Explicit length constraints override the task-based estimate: they are a
+    // hard ceiling and must not be re-scaled by complexity.
+    const wordMatch = WORD_LIMIT.exec(t);
+    if (wordMatch) {
+      const words = Number(wordMatch[1] ?? wordMatch[2]);
+      expectedOutputTokens = Math.max(4, Math.round(words * 1.5));
+    } else if (has(t, ONE_LINER)) {
+      expectedOutputTokens = 20;
+    } else if (has(t, BRIEF)) {
+      expectedOutputTokens = Math.min(expectedOutputTokens, 120);
+    }
+
     const dataSensitivity = has(t, SENSITIVE) ? 0.8 : 0.0;
 
     return {
@@ -194,6 +238,8 @@ export class HeuristicSignalProvider implements SignalProvider {
       taskType,
       dataSensitivity,
       degraded: false,
+      // Offline + deterministic: the decision is effectively free.
+      signalCost: { usd: 0, latencyMs: 0 },
     };
   }
 }

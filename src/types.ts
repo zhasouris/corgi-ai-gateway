@@ -106,6 +106,22 @@ export interface RoutingRequest {
 }
 
 /** Structured output from the single classifier call (ADR 0003). */
+/**
+ * What making the routing decision actually cost — the price and latency of the
+ * signal call the router used to pick a model. Real spend on the *decision*,
+ * distinct from the projected cost of forwarding the request to the chosen
+ * model. Zero for the offline heuristic (no LLM call).
+ */
+export interface SignalCost {
+  /** USD spent on the signal call itself (0 for the deterministic heuristic). */
+  usd: number;
+  /** Tokens the signal call consumed (absent when no LLM was called). */
+  inputTokens?: number;
+  outputTokens?: number;
+  /** Wall-clock ms the signal call took (network + inference; ~0 for heuristic). */
+  latencyMs: number;
+}
+
 export interface ClassifierResult {
   complexity: number;
   expectedOutputTokens: number;
@@ -114,6 +130,8 @@ export interface ClassifierResult {
   dataSensitivity: number;
   /** True when the classifier was skipped/failed and defaults were used. */
   degraded: boolean;
+  /** Cost + latency of the signal call that produced this result (ADR 0012). */
+  signalCost?: SignalCost;
 }
 
 export function defaultClassifierResult(degraded = false): ClassifierResult {
