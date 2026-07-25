@@ -439,7 +439,7 @@ export function demoHtml(
       var compTask = hasComp && data.ranked[0].competency ? data.ranked[0].competency.task : null;
       var detectedTask = data.classifier ? data.classifier.taskType : null;
       html += '<div class="card"><h3>Ranked candidates</h3>' +
-        '<div class="muted" style="font-size:.8rem;margin:.1rem 0 .5rem">⭐ chosen · 🟢 routable · ⚪ no key</div>' +
+        '<div class="muted" style="font-size:.8rem;margin:.1rem 0 .5rem">⭐ chosen · 🟢 routable · ⚪ no key · <span title="A milli-cent: 1/1000 of a cent, i.e. $0.00001. Per-request costs are fractions of a cent, so this keeps them readable.">m¢ = 1/1000 of a cent</span></div>' +
         '<table class="cards">' +
         '<tr><th></th><th>model</th><th>vendor</th><th>tier</th>' +
         (hasComp ? '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' : '') +
