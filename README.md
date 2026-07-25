@@ -20,7 +20,6 @@ a few seconds for a cold start.*
 ![tests](https://img.shields.io/badge/tests-182%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-88%25%20lines-green)
 ![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2017%2F17%20gold-brightgreen)
-![TypeScript](https://img.shields.io/badge/TypeScript-97.7%25-3178c6)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-instrumented-f5a800)
 ![license](https://img.shields.io/badge/license-MIT-blue)
