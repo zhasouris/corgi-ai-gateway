@@ -50,7 +50,8 @@ flowchart LR
 > the routing quality is measured (not asserted), and the architecture is deliberately
 > separable so a trained ML router can slot in without touching the hot path. If you're
 > evaluating the engineering, start with [How it works](#how-it-works),
-> [Measuring the routing](#measuring-the-routing), and the [ADRs](docs/decisions).
+> [Measuring the routing](#measuring-the-routing), how we
+> [rank the models](docs/model-ranking-methodology.md), and the [ADRs](docs/decisions).
 
 ---
 
@@ -325,7 +326,9 @@ Treat these as **directional, not authoritative.** Vendors publish different ben
 cross-vendor comparison within a category is approximate; classic suites (MMLU/HumanEval-class) may
 be saturated or contaminated; and several 2026 flagships publish few classic benchmarks, so their
 composite is partial. Because it's all config, re-sourcing is an edit — regenerate
-`model-scores.json` and re-run the injection when better data lands.
+`model-scores.json` and re-run the injection when better data lands. Full account, including how
+the router consumes these numbers per request:
+**[Model Ranking Methodology](docs/model-ranking-methodology.md)**.
 
 ### Control it with headers (never the body)
 
