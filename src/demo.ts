@@ -92,12 +92,14 @@ export function demoHtml(
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>corgi-ai-gateway — decision inspector</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 1120px;
-    margin: 1.5rem auto; padding: 0 1rem; line-height: 1.5; }
+    margin: 1.5rem auto; line-height: 1.5;
+    /* Clear the notch/status bar and rounded corners on iOS (viewport-fit=cover). */
+    padding: env(safe-area-inset-top) calc(1rem + env(safe-area-inset-right)) 1rem calc(1rem + env(safe-area-inset-left)); }
   h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
   .sub { opacity: 0.7; margin-top: 0; font-size: 0.9rem; }
   .coldstart { border: 1px solid #d9770633; background: #d977061a; border-radius: 8px;
@@ -145,6 +147,18 @@ export function demoHtml(
   pre { overflow-x: auto; background: #8881; padding: 0.6rem; border-radius: 6px; font-size: 0.8rem; }
   .err { color: #b91c1c; }
   @media (max-width: 760px) { .layout { flex-direction: column; } .sidebar { width: auto; } }
+  /* Below 600px the multi-column candidate tables compress badly, so each row
+     becomes a labeled card (P3.2): header row hidden, every cell a label/value pair. */
+  @media (max-width: 600px) {
+    table.cards, table.cards tbody, table.cards tr, table.cards td { display: block; }
+    table.cards tr:first-child { display: none; }
+    table.cards tr { border: 1px solid #8883; border-radius: 8px; margin: 0.5rem 0; padding: 0.25rem 0.7rem; }
+    table.cards tr.win { border-color: #7c3aed; }
+    table.cards td { border: none; display: flex; justify-content: space-between; gap: 1rem; padding: 0.14rem 0; }
+    table.cards td::before { content: attr(data-label); opacity: 0.55; }
+    table.cards td[data-label=""]::before { content: none; }
+    table.cards td[data-label="model"] { font-weight: 600; font-size: 1.02rem; }
+  }
 </style>
 </head>
 <body>
@@ -389,9 +403,9 @@ export function demoHtml(
 
       function compCell(r) {
         var k = r.competency;
-        if (!k) return '<td class="muted" title="generic task — competency not applied">—</td>';
+        if (!k) return '<td class="muted" data-label="comp." title="generic task — competency not applied">—</td>';
         var tip = (k.fallback ? 'tier fallback: ' : '') + k.source + (k.updated ? ' · updated ' + k.updated : '');
-        return '<td title="' + esc(tip) + '">' + k.score.toFixed(3) +
+        return '<td data-label="comp." title="' + esc(tip) + '">' + k.score.toFixed(3) +
           (k.fallback ? '<span class="muted">†</span>' : '') + '</td>';
       }
       // Competency only applies to benchmark-eligible tasks; for a conversational
@@ -412,16 +426,16 @@ export function demoHtml(
         var rateTip = r.ratePer1MInput != null
           ? '$' + r.ratePer1MInput + ' / 1M input · $' + r.ratePer1MOutput + ' / 1M output'
           : '';
-        return '<tr class="' + cls + '"><td>' + indicator + '</td><td>' +
-          esc(r.model) + note + '</td><td>' + vendorCell(r.provider) + '</td><td>' + esc(r.tier) +
-          '</td>' + (hasComp ? compCell(r) : '') + '<td>' + r.score.toFixed(3) + '</td>' +
-          '<td title="' + esc(rateTip) + '">' + fmtCost(r.estimatedCost) + '</td></tr>';
+        return '<tr class="' + cls + '"><td data-label="">' + indicator + '</td><td data-label="model">' +
+          esc(r.model) + note + '</td><td data-label="vendor">' + vendorCell(r.provider) + '</td><td data-label="tier">' + esc(r.tier) +
+          '</td>' + (hasComp ? compCell(r) : '') + '<td data-label="score">' + r.score.toFixed(3) + '</td>' +
+          '<td data-label="est. cost" title="' + esc(rateTip) + '">' + fmtCost(r.estimatedCost) + '</td></tr>';
       }).join('');
       var compTask = hasComp && data.ranked[0].competency ? data.ranked[0].competency.task : null;
       var detectedTask = data.classifier ? data.classifier.taskType : null;
       html += '<div class="card"><h3>Ranked candidates</h3>' +
         '<div class="muted" style="font-size:.8rem;margin:.1rem 0 .5rem">⭐ chosen · 🟢 routable · ⚪ no key</div>' +
-        '<table>' +
+        '<table class="cards">' +
         '<tr><th></th><th>model</th><th>vendor</th><th>tier</th>' +
         (hasComp ? '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' : '') +
         '<th>score</th><th title="Projected USD cost for THIS request (input + output tokens × the model rate). Hover a value for the model list price per 1M tokens.">est. cost</th></tr>' + rows + '</table>' +
@@ -436,11 +450,11 @@ export function demoHtml(
 
     if (data.excluded && data.excluded.length) {
       var ex = data.excluded.map(function (e) {
-        return '<tr><td>' + avail(e.model) + '</td><td>' + esc(e.model) + '</td><td>' +
-          vendorOf(e.model) + '</td><td class="muted">' +
+        return '<tr><td data-label="">' + avail(e.model) + '</td><td data-label="model">' + esc(e.model) + '</td><td data-label="vendor">' +
+          vendorOf(e.model) + '</td><td class="muted" data-label="failed">' +
           esc((e.failedConstraints || []).join(', ')) + '</td></tr>';
       }).join('');
-      html += '<div class="card"><h3>Excluded by constraints</h3><table>' +
+      html += '<div class="card"><h3>Excluded by constraints</h3><table class="cards">' +
         '<tr><th></th><th>model</th><th>vendor</th><th>failed</th></tr>' + ex + '</table></div>';
     }
 
