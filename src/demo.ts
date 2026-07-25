@@ -197,6 +197,10 @@ export function demoHtml(
         <label>Force model
           <select id="force">${modelOptions}</select>
         </label>
+        <label>Temperature
+          <input type="number" id="temperature" min="0" max="2" step="0.1" placeholder="default" style="width:5.5rem"
+            title="Sampling temperature to send in the request. OpenAI o-series models (o4-mini, o3) only accept the default (1); set a non-default value (e.g. 0) to watch them get filtered out of routing. Leave blank to send none." />
+        </label>
         <button class="go" id="go">Inspect routing</button>
         <button class="go" id="compare" title="Run best / value / fast on this prompt and show the picks side by side">Compare strategies</button>
         <span class="legend" title="A model is routable when this deployment holds an API key for its provider. Models without one are still ranked — the router just can't forward to them.">
@@ -430,6 +434,7 @@ export function demoHtml(
     if (d.requiresTools) reqs.push('tools');
     if (d.requiresStructuredOutput) reqs.push('structured output');
     if (d.requiresAudio) reqs.push('audio');
+    if (d.requiresCustomTemperature) reqs.push('custom temperature');
     html += '<div class="card"><h3>Detected requirements</h3><div class="badges">' +
       (reqs.length ? reqs.map(function (r) { return '<span>' + esc(r) + '</span>'; }).join('') : '<span class="muted">none</span>') +
       '</div></div>';
@@ -535,6 +540,8 @@ export function demoHtml(
     var prompt = document.getElementById('prompt').value;
     if (!prompt.trim()) return;
     var body = { messages: [{ role: 'user', content: prompt }] };
+    var tv = document.getElementById('temperature').value;
+    if (tv !== '') body.temperature = Number(tv);
     btn.disabled = true; cmpBtn.disabled = true;
     out.innerHTML = '<div class="card muted">Comparing best / value / fast…</div>';
     try {
@@ -595,6 +602,11 @@ export function demoHtml(
     var strategy = document.getElementById('strategy').value;
     var force = document.getElementById('force').value;
     var body = bodyOverride || { messages: [{ role: 'user', content: prompt }] };
+    // Manual submit: attach the temperature control (presets carry their own).
+    if (!bodyOverride) {
+      var tv = document.getElementById('temperature').value;
+      if (tv !== '') body.temperature = Number(tv);
+    }
     var headers = { 'Content-Type': 'application/json', 'X-Router-Strategy': strategy };
     // Force a specific model: pin it in the body and bypass routing.
     if (force && force !== 'auto') {
@@ -625,6 +637,9 @@ export function demoHtml(
     document.getElementById('prompt').value = p.prompt;
     document.getElementById('strategy').value = p.strategy;
     document.getElementById('force').value = (p.bypass && p.body && p.body.model) ? p.body.model : 'auto';
+    // Reflect any temperature the preset carries (e.g. the temperature gold case).
+    var pt = p.body && p.body.temperature;
+    document.getElementById('temperature').value = (pt != null) ? pt : '';
     submit(p.body);
   }
 

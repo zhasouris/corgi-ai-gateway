@@ -247,6 +247,7 @@ export class Router {
       requiresTools: req.requiresTools,
       requiresStructuredOutput: req.requiresStructuredOutput,
       requiresAudio: req.requiresAudio,
+      requiresCustomTemperature: req.requiresCustomTemperature ?? false,
     };
 
     // Forced model: bypass routing entirely and report the chosen model.
@@ -398,6 +399,7 @@ export interface ExplainResult {
     requiresTools: boolean;
     requiresStructuredOutput: boolean;
     requiresAudio: boolean;
+    requiresCustomTemperature: boolean;
   };
   inputTokens: number;
   classifier: ClassifierResult | null;
