@@ -247,16 +247,17 @@ drop-in:
 | --- | --- | --- |
 | `input_tokens` | prompt size vs. 128k | favors cheap input pricing, weighted up as prompts grow |
 | `expected_output` | predicted output vs. 8k | favors cheap output pricing, weighted up as output grows |
-| `complexity` | `complexity` | `tier × (2·complexity − 1)` — hard prompts favor higher tiers, easy prompts lower |
+| `complexity` | `complexity` | `0.5 + (quality − 0.5)·(2·complexity − 1)` — hard prompts favor higher-capability models, easy prompts lower; continuous `quality` discriminates *within* a tier |
 | `reasoning_depth` | `reasoningDepth` | rewards models that declare a `reasoning` capability |
-| `task_type` | 1 if coding/math/reasoning/analysis | rewards higher-tier models on hard task classes |
+| `task_type` | 1 if coding/math/reasoning/etc. | per-task **competency**, scaled by difficulty — an easy prompt in a hard class doesn't reserve the best-at-task model |
 | `data_sensitivity` | `dataSensitivity` | biases toward local/self-hosted providers (neutral until one exists) |
 | `cost` | — | `−(costPer1kInput + costPer1kOutput)` |
 | `latency` | — | `−avgLatencyMs` |
 
 Every model in the catalog (`config/models.yaml`) carries the attributes these rules read:
-`tier`, `contextWindow`, `maxOutputTokens`, `costPer1kInput`, `costPer1kOutput`,
-`avgLatencyMs`, and `capabilities` — plus an optional per-model `api_key_env`.
+`tier`, `quality` (a continuous 0..1 capability score), `contextWindow`, `maxOutputTokens`,
+`costPer1kInput`, `costPer1kOutput`, `avgLatencyMs`, and `capabilities` — plus an optional
+per-model `api_key_env`.
 
 ### The scoring mechanism
 
@@ -268,11 +269,14 @@ Selection runs in three stages, and only the last one is weighted:
    `expectedOutput ≤ maxOutputTokens`). A vision request can *never* reach a non-vision
    model — this is a filter, not a preference.
 
-2. **Per-rule scoring, then min-max normalization.** Each surviving model gets a raw score
-   from every rule. Because those raw scores live on wildly different scales (dollars,
-   milliseconds, tier integers), each rule's scores are **min-max normalized to `0..1`
-   across the candidate set** — so a weight means the same thing regardless of the rule's
-   native units. (If every candidate ties on a rule, they all get `0.5`.)
+2. **Per-rule scoring, then normalization.** Each surviving model gets a raw score from every
+   rule. Rules on incomparable native scales (dollars, milliseconds) are **min-max normalized
+   to `0..1`** across the candidate set, so a weight means the same thing regardless of units.
+   The capability rules whose *magnitude* is meaningful (`complexity`, `reasoning_depth`,
+   `task_type`, `data_sensitivity`) are instead kept on an absolute `0..1` scale — min-max
+   would stretch their spread to fill the range and erase *how much* capability matters for
+   this prompt, which is exactly the signal that keeps an easy prompt's frontier wide (so
+   `value`/`fast` stay cheap) and a hard prompt's narrow.
 
 3. **Frontier, then optimize** ([ADR 0017](docs/decisions/0017-frontier-then-optimize-strategies.md)).
    The quality-family rules only (`complexity`, `reasoning_depth`, `task_type`/competency —
@@ -293,10 +297,35 @@ A **strategy chooses the objective within the frontier** (`config/strategies.yam
 statistically tied (that gap is benchmark noise), so it takes the **cheapest** of them — a
 model must be *meaningfully* better to cost more.
 
-Because `complexity` scores `tier·(2v−1)` — negative for high tier at low difficulty — `Q` is
-difficulty-aware for free: a trivial prompt's frontier is the *cheap* models, so even `best`
-won't overspend on "say hi". Cost/speed caps compose on top: `X-Router-Max-Cost` bounds price
-on any strategy. Adding a criterion is one new rule file; the frontier width `δ` is one knob.
+Because `complexity` and `task_type` both scale with difficulty — `complexity` tilts a
+continuous `quality` score by `(2·complexity−1)`, and competency's spread shrinks toward neutral
+on easy prompts — `Q` is difficulty-aware: a trivial prompt's frontier is *wide* and `value`/`best`
+land on a cheap model, while a hard prompt's narrows to the strong ones. Continuous `quality` also
+means `Q` no longer collapses to a handful of tier constants — models rank distinctly, and
+`X-Router-Reason` names the runner-up and the deciding attribute (cost/latency) so a within-frontier
+pick is legible ([ADR 0019](docs/decisions/0019-continuous-capability-and-difficulty-scaled-competency.md)).
+Cost/speed caps compose on top: `X-Router-Max-Cost` bounds price on any strategy. Adding a criterion
+is one new rule file; the frontier width `δ` is one knob.
+
+### Where the capability numbers come from
+
+`quality` (the continuous capability composite) and the per-task `competency` scores are
+**benchmark-seeded, not guessed.** They were assembled by per-vendor web research fanned across
+parallel agents: for each model, each category score is the **mean of the available normalized
+(0–100) public benchmarks** for that category — and left `null` when the web turned up none
+(never invented). The `quality` **composite** is a weighted average of the available categories
+(reasoning and coding weighted highest), with any missing category's weight redistributed. Every
+number carries its **source and date** in
+[`docs/process/model-scores.json`](docs/process/model-scores.json); `competency.yaml` records
+provenance per entry ([ADR 0010](docs/decisions/0010-per-task-competency-scores.md)) and `quality`
+is injected into `models.yaml` from the composite
+([ADR 0019](docs/decisions/0019-continuous-capability-and-difficulty-scaled-competency.md)).
+
+Treat these as **directional, not authoritative.** Vendors publish different benchmark variants, so
+cross-vendor comparison within a category is approximate; classic suites (MMLU/HumanEval-class) may
+be saturated or contaminated; and several 2026 flagships publish few classic benchmarks, so their
+composite is partial. Because it's all config, re-sourcing is an edit — regenerate
+`model-scores.json` and re-run the injection when better data lands.
 
 ### Control it with headers (never the body)
 
@@ -456,12 +485,16 @@ implementation is open.
 | [0007](docs/decisions/0007-per-model-api-keys.md) | Per-model API keys for cost attribution | ✅ Accepted |
 | [0008](docs/decisions/0008-observability.md) | Observability — metrics, logs, Azure Monitor | ✅ Accepted |
 | [0009](docs/decisions/0009-sensitive-data-routing.md) | Sensitive data → approved providers, as a fail-closed **constraint** | 📋 Proposed |
-| [0010](docs/decisions/0010-per-task-competency-scores.md) | Per-task competency scores instead of a single `tier` scalar | 📋 Proposed — blocked on `taskType` accuracy ([TODO 4](docs/TODO.md)) |
+| [0010](docs/decisions/0010-per-task-competency-scores.md) | Per-task competency scores instead of a single `tier` scalar | ✅ Accepted |
 | [0011](docs/decisions/0011-lexicographic-tie-break.md) | Lexicographic tie-break — `quality-prefer-cost` and friends | 📋 Proposed — unblocked |
 | [0012](docs/decisions/0012-classifier-latency.md) | Cut classifier latency — the router's entire overhead is one LLM call | 🟡 Partial — `latency` uses a fast signal (done); caching planned |
 | [0013](docs/decisions/0013-routellm-sidecar-transport.md) | Keep the HTTP sidecar (reject CLI); the real lever is the embedding hop | ✅ Accepted — local-embedding follow-up open |
 | [0014](docs/decisions/0014-dotnet-client-and-prerequisites.md) | Official .NET client (Semantic Kernel) + the router-side headers it needs | 📋 Proposed — R2 shipped; R1/R3/R4 open |
 | [0015](docs/decisions/0015-client-credentials-auth.md) | Protect `/v1` with OAuth 2.0 client-credentials JWTs (replaces static keys) | ✅ Accepted |
+| [0016](docs/decisions/0016-google-sign-in-for-the-inspector.md) | Inspector auth — Google Sign-In for `/demo`, anonymous `/v1/router/explain` | 📋 Accepted — not yet implemented |
+| [0017](docs/decisions/0017-frontier-then-optimize-strategies.md) | Frontier-then-optimize routing — `best` / `value` / `fast` | ✅ Accepted |
+| [0018](docs/decisions/0018-base-model-delta-kpis.md) | Base-model delta report — cost & targeted-accuracy KPIs (`eval:baseline`) | ✅ Accepted |
+| [0019](docs/decisions/0019-continuous-capability-and-difficulty-scaled-competency.md) | Continuous capability index (`quality`) + difficulty-scaled competency | ✅ Accepted |
 
 ---
 
