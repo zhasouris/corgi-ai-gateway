@@ -10,13 +10,19 @@ services:
     # them into the container explicitly — the container's working dir is /app,
     # not the host root (ADR: keys live at repo root, wired through here).
     env_file:
-      - .env
+      # Optional so the stack boots for local testing without provider keys — the
+      # router then runs "inspector-only": /v1 answers 401, but /healthz, /demo,
+      # and the routing decision all work. Copy .env.example to .env to add keys.
+      - path: .env
+        required: false
     environment:
       # Where the RouteLLM sidecar lives (used only when RouteLLM is enabled).
       ROUTELLM_URL: http://routellm-sidecar:8001
     volumes:
       # Mount config read-only so catalog/strategy/server edits don't need a rebuild.
       - ./config:/app/config:ro
+    networks:
+      - corgi-net
     restart: unless-stopped
 
   # RouteLLM signal sidecar (ADR 0006). Heavy (pulls PyTorch + model weights), so
@@ -30,7 +36,21 @@ services:
     container_name: routellm-sidecar
     profiles: ["routellm"]
     env_file:
-      - .env # OPENAI_API_KEY — the mf router embeds prompts via OpenAI
+      # OPENAI_API_KEY — the mf router embeds prompts via OpenAI. Optional so a
+      # keyless `--profile routellm up` still starts (it just can't embed).
+      - path: .env
+        required: false
     expose:
       - "8001"
+    networks:
+      - corgi-net
     restart: unless-stopped
+
+# Shared, fixed-name network (not project-prefixed) so the VS Code devcontainer
+# (.devcontainer/docker-compose.yml) can attach to the SAME network and reach
+# these services by name — `corgi-ai-gateway:8000`, `routellm-sidecar:8001`.
+# Both files declare it with this literal name and neither marks it external, so
+# whichever `up`s first creates it and the other reuses it. Order-independent.
+networks:
+  corgi-net:
+    name: corgi-net

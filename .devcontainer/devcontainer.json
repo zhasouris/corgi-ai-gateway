@@ -1,0 +1,36 @@
+{
+  "name": "corgi-ai-gateway",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "node",
+
+  // Install Linux deps into the named node_modules volume after the container is
+  // created (first open is slower; subsequent opens reuse the volume). The volume
+  // mountpoint is created root-owned, so hand it to the non-root `node` user
+  // first, otherwise `npm ci` fails with EACCES and tsx/vitest never install.
+  "postCreateCommand": "sudo chown -R node:node node_modules && npm ci",
+
+  // The gateway is published to the host at 8180 (-> container 8000) by the
+  // compose `ports` mapping, so it works with or without VS Code attached.
+  // Run `npm run dev` inside the container, then open http://localhost:8180.
+  "portsAttributes": {
+    "8000": { "label": "gateway (localhost:8180)", "onAutoForward": "notify" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  }
+}
