@@ -195,9 +195,13 @@ export class Router {
       span.setAttribute("router.candidates", candidates.length);
       span.end();
 
+      // NOTE: the `costPer1k*` fields actually hold USD per 1,000,000 tokens
+      // (legacy name; rename tracked in ADR 0018). Divide by 1e6 so the estimate
+      // — surfaced in the demo and recorded as the router.estimated_cost metric —
+      // is true USD, not 1000x inflated.
       const estimatedCost =
-        (analysis.inputTokens / 1000) * top.model.costPer1kInput +
-        (analysis.classifier.expectedOutputTokens / 1000) * top.model.costPer1kOutput;
+        (analysis.inputTokens / 1_000_000) * top.model.costPer1kInput +
+        (analysis.classifier.expectedOutputTokens / 1_000_000) * top.model.costPer1kOutput;
       const routingMs = Date.now() - started;
       recordDecision({
         strategy: req.options.strategy,
@@ -321,12 +325,18 @@ export class Router {
       frontier: inFrontier.has(s.model.id),
       breakdown: s.breakdown,
       competency: taskCompetency(s.model),
+      // Per-1M fields (see the decide() note) → true per-request USD. Kept at 8
+      // decimals so tiny toy-prompt costs don't round to zero before display.
       estimatedCost: Number(
         (
-          (analysis.inputTokens / 1000) * s.model.costPer1kInput +
-          (outTokens / 1000) * s.model.costPer1kOutput
-        ).toFixed(6),
+          (analysis.inputTokens / 1_000_000) * s.model.costPer1kInput +
+          (outTokens / 1_000_000) * s.model.costPer1kOutput
+        ).toFixed(8),
       ),
+      // The model's list price, USD per 1,000,000 tokens — the stable rate the
+      // inspector shows on hover so the tiny per-request figure is interpretable.
+      ratePer1MInput: s.model.costPer1kInput,
+      ratePer1MOutput: s.model.costPer1kOutput,
     }));
 
     // Same choice the forwarding path would make, so the inspector reports the
@@ -402,7 +412,12 @@ export interface ExplainResult {
     frontier: boolean;
     breakdown: Record<string, number>;
     competency: TaskCompetency | null;
+    /** Projected USD cost of this request on this model (input+output tokens × rate). */
     estimatedCost: number;
+    /** Model list price, USD per 1,000,000 tokens (input). */
+    ratePer1MInput: number;
+    /** Model list price, USD per 1,000,000 tokens (output). */
+    ratePer1MOutput: number;
   }[];
   decision: { model: string; provider: string; reason: string } | null;
   warnings: string[];

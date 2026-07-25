@@ -108,8 +108,9 @@ export async function baselineReport(
   const CLS_OUTPUT_TOKENS = 80; // the small JSON it returns
   const classifierCost = (a: RequestAnalysis): number =>
     clsModel
-      ? ((a.inputTokens + CLS_SYSTEM_TOKENS) / 1000) * clsModel.costPer1kInput +
-        (CLS_OUTPUT_TOKENS / 1000) * clsModel.costPer1kOutput
+      ? // `costPer1k*` fields hold USD per 1,000,000 tokens (legacy name; ADR 0018).
+        ((a.inputTokens + CLS_SYSTEM_TOKENS) / 1_000_000) * clsModel.costPer1kInput +
+        (CLS_OUTPUT_TOKENS / 1_000_000) * clsModel.costPer1kOutput
       : 0;
 
   const deltas: PromptDelta[] = [];

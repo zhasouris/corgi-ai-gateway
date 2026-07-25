@@ -17,9 +17,9 @@ forwards — the whole `/v1` surface answers 401. Running on Azure Container App
 a few seconds for a cold start.*
 
 [![live demo](https://img.shields.io/badge/live%20demo-decision%20inspector-7c3aed)](https://llmrouter-app.purplehill-bc78c3f6.eastus2.azurecontainerapps.io)
-![tests](https://img.shields.io/badge/tests-151%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-178%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-88%25%20lines-green)
-![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2011%2F11%20gold-brightgreen)
+![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2017%2F17%20gold-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-97.7%25-3178c6)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-instrumented-f5a800)
@@ -60,7 +60,7 @@ flowchart LR
 - **A real per-request decision**, not load-balancing: easy prompts fall to a cheap/fast
   model, hard prompts reserve the expensive one — per request, not per app.
 - **Measured, not hoped.** A built-in eval harness scores routing against provable gold
-  cases (**11/11**) and LLM-judged ground truth (**83%** accuracy, 0% over-routing).
+  cases (**17/17**) and LLM-judged ground truth (**83%** accuracy, 0% over-routing).
 - **Pluggable routing brain.** Deterministic heuristic, a cheap-LLM classifier, or a
   RouteLLM sidecar — all behind one `SignalProvider` interface; degrades gracefully.
 - **Header-based control surface** that never touches the request body.
@@ -325,7 +325,7 @@ that turns "is it any good?" into numbers — two ways, each honest about what i
 
 | Method | What it proves | Result |
 | --- | --- | --- |
-| **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error) | **11/11** |
+| **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error; easy vs. hard math/coding → cheap tier vs. reasoning model) | **17/17** |
 | **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (value, 12-prompt set) |
 
 Two honest limits on that judged number. It is **n=12**, so a single prompt moves it by 8
@@ -401,7 +401,7 @@ provider default.
 ## Tests
 
 ```bash
-npm test          # vitest — 51 tests incl. gold routing + judging logic (hermetic)
+npm test          # vitest — 178 tests incl. gold routing + judging logic (hermetic)
 npm run typecheck # tsc --noEmit
 npm run eval      # dry-run routing eval (strategies vs. baselines)
 npm run eval:judge# quality-judged accuracy (spends — real model calls)

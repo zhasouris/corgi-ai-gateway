@@ -1,0 +1,45 @@
+# VS Code dev-container service. It joins the SAME `corgi-net` network as the app
+# stack (../docker-compose.yml), so from a terminal in the container you can hit
+# the running services by name for local testing:
+#
+#   curl http://corgi-ai-gateway:8000/healthz      # the router app (service: router)
+#   curl http://routellm-sidecar:8001/score         # sidecar (docker compose --profile routellm up)
+#
+# The network is declared here with the same literal name and is NOT external, so
+# opening the devcontainer creates `corgi-net` if the app stack isn't up yet, and
+# reuses it if it is. No manual `docker network create`, no ordering requirement.
+services:
+  dev:
+    # LTS Node (satisfies package.json engines >=20); the app image itself is
+    # node:26-slim, but tsx/vitest run identically here. Ships git, a non-root
+    # `node` user, and the usual build tooling.
+    image: mcr.microsoft.com/devcontainers/typescript-node:22-bookworm
+    command: sleep infinity
+    working_dir: /workspace
+    # Publish the gateway to the host at 8180 -> container 8000, so the demo /
+    # inspector is reachable at http://localhost:8180 when you run `npm run dev`
+    # (or `npm start`) inside the container. Works with or without VS Code
+    # attached, and 8180 avoids clashing with the app stack's router (host 8000).
+    ports:
+      - "8180:8000"
+    volumes:
+      - ..:/workspace:cached
+      # node_modules lives in a named volume, NOT on the host bind mount: the
+      # container needs Linux-native binaries (esbuild/vitest) that differ from
+      # the ones a `npm install` on the Windows host produces.
+      - corgi-node-modules:/workspace/node_modules
+    # Reuse the app stack's provider keys if present, so an in-container
+    # `npm start`/`curl` behaves like the real service. Absent .env is fine —
+    # the test suite and the inspector work without keys.
+    env_file:
+      - path: ../.env
+        required: false
+    networks:
+      - corgi-net
+
+networks:
+  corgi-net:
+    name: corgi-net
+
+volumes:
+  corgi-node-modules:

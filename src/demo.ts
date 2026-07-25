@@ -248,6 +248,13 @@ export function demoHtml(
     });
   }
   function pct(x) { return Math.round(x * 100) + '%'; }
+  // Projected per-request cost is tiny for toy prompts; show enough precision
+  // that a real cost never renders as a misleading "$0.00000".
+  function fmtCost(c) {
+    if (!(c > 0)) return '$0';
+    if (c < 0.000001) return '<$0.000001';
+    return '$' + c.toFixed(6);
+  }
 
   // The response headers a real client would read off /v1/chat/completions.
   // /v1/router/explain emits the same set (ADR 0002).
@@ -267,6 +274,30 @@ export function demoHtml(
     if (data.routingMs == null) return '';
     return '<span class="lat" title="Time spent routing: detection, signal, filtering and scoring. ' +
       'Excludes the upstream model call.">' + esc(data.routingMs) + ' ms</span>';
+  }
+
+  // What it cost to MAKE this decision — the signal/classifier call the router
+  // ran to pick a model. Real spend, distinct from the projected cost of running
+  // the request on the chosen model (the "est. cost" column).
+  function decisionCostCard(data) {
+    var sc = data.classifier && data.classifier.signalCost;
+    var prov = data.signalProvider || 'heuristic';
+    var body;
+    if (sc && sc.usd > 0) {
+      var toks = (sc.inputTokens != null && sc.outputTokens != null)
+        ? ' · ' + (sc.inputTokens + sc.outputTokens) + ' tokens (' +
+          sc.inputTokens + ' in / ' + sc.outputTokens + ' out)'
+        : '';
+      body = 'Making this decision cost <b>' + fmtCost(sc.usd) + '</b> and <b>' +
+        esc(sc.latencyMs) + ' ms</b> — one ' + esc(prov) + ' call' + toks +
+        '. No answer was generated; this is only the routing signal.';
+    } else {
+      body = 'Making this decision cost <b>$0</b> — the ' + esc(prov) +
+        ' signal runs locally with no LLM call' +
+        (data.routingMs != null ? ', in ' + esc(data.routingMs) + ' ms' : '') + '.';
+    }
+    return '<div class="card"><h3>Cost of this decision</h3>' +
+      '<div class="muted">' + body + '</div></div>';
   }
 
   // Which signal provider ran — varies by strategy (ADR 0012). fast uses a
@@ -308,6 +339,7 @@ export function demoHtml(
         '<span class="muted">(' + esc(data.decision.provider) + ')</span>' + latency(data) + '<br>' +
         '<span class="muted">' + esc(data.decision.reason) + '</span>' +
         unroutableNote(data.decision) + '</div>';
+      html += decisionCostCard(data);
     } else {
       html += '<div class="card err">No eligible model for this request.</div>';
     }
@@ -362,22 +394,43 @@ export function demoHtml(
         return '<td title="' + esc(tip) + '">' + k.score.toFixed(3) +
           (k.fallback ? '<span class="muted">†</span>' : '') + '</td>';
       }
+      // Competency only applies to benchmark-eligible tasks; for a conversational
+      // prompt every row is null. Drop the whole column in that case rather than
+      // render a wall of "—" that reads as unfinished (P1.4).
+      var hasComp = data.ranked.some(function (r) { return r.competency; });
       var rows = data.ranked.map(function (r) {
         var cls = r.model === chosen ? 'win' : (passedOver && r.model === topScorer ? 'skipped' : '');
         var note = '';
         if (r.model === chosen) note = ' <span class="tag">chosen</span>';
         else if (passedOver && r.model === topScorer) note = ' <span class="tag muted">top score, no key</span>';
-        return '<tr class="' + cls + '"><td>' + avail(r.model) + '</td><td>' +
+        // The pick gets a ⭐ instead of the routable dot — but only when it is
+        // actually routable. An unroutable pick (a fresh install with no keys)
+        // keeps its ⚪ so the table never implies it could be forwarded to; the
+        // "chosen" tag still identifies it.
+        var indicator = (r.model === chosen && AVAILABLE[r.model]) ? '⭐' : avail(r.model);
+        // Hover the projected cost to see the stable per-1M list price it derives from.
+        var rateTip = r.ratePer1MInput != null
+          ? '$' + r.ratePer1MInput + ' / 1M input · $' + r.ratePer1MOutput + ' / 1M output'
+          : '';
+        return '<tr class="' + cls + '"><td>' + indicator + '</td><td>' +
           esc(r.model) + note + '</td><td>' + vendorCell(r.provider) + '</td><td>' + esc(r.tier) +
-          '</td>' + compCell(r) + '<td>' + r.score.toFixed(3) + '</td><td>$' + r.estimatedCost.toFixed(5) + '</td></tr>';
+          '</td>' + (hasComp ? compCell(r) : '') + '<td>' + r.score.toFixed(3) + '</td>' +
+          '<td title="' + esc(rateTip) + '">' + fmtCost(r.estimatedCost) + '</td></tr>';
       }).join('');
-      var compTask = data.ranked[0] && data.ranked[0].competency ? data.ranked[0].competency.task : null;
-      html += '<div class="card"><h3>Ranked candidates</h3><table>' +
+      var compTask = hasComp && data.ranked[0].competency ? data.ranked[0].competency.task : null;
+      var detectedTask = data.classifier ? data.classifier.taskType : null;
+      html += '<div class="card"><h3>Ranked candidates</h3>' +
+        '<div class="muted" style="font-size:.8rem;margin:.1rem 0 .5rem">⭐ chosen · 🟢 routable · ⚪ no key</div>' +
+        '<table>' +
         '<tr><th></th><th>model</th><th>vendor</th><th>tier</th>' +
-        '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' +
-        '<th>score</th><th>est. cost</th></tr>' + rows + '</table>' +
-        (compTask ? '<div class="muted" style="margin-top:.4rem">comp. = competency for detected task <code>' +
-          esc(compTask) + '</code>; † = tier fallback (no benchmark data). Hover a value for its source.</div>' : '') +
+        (hasComp ? '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' : '') +
+        '<th>score</th><th title="Projected USD cost for THIS request (input + output tokens × the model rate). Hover a value for the model list price per 1M tokens.">est. cost</th></tr>' + rows + '</table>' +
+        (hasComp
+          ? '<div class="muted" style="margin-top:.4rem">comp. = competency for detected task <code>' +
+            esc(compTask) + '</code>; † = tier fallback (no benchmark data). Hover a value for its source.</div>'
+          : '<div class="muted" style="margin-top:.4rem">No per-task competency column: competency is benchmark-seeded for tasks like coding, math, and reasoning' +
+            (detectedTask ? ', but the detected task is <code>' + esc(detectedTask) + '</code>' : '') +
+            '. Try a coding or math prompt to see per-model scores.</div>') +
         '</div>';
     }
 

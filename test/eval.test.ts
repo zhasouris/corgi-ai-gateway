@@ -42,8 +42,8 @@ describe("cost estimate", () => {
       features: {},
       signalProvider: "stub",
     };
-    // 1.0*2 + 0.5*8 = 6
-    expect(estimateCost(model, analysis)).toBeCloseTo(6, 6);
+    // Rates are USD per 1,000,000 tokens: (1000/1e6)*2 + (500/1e6)*8 = 0.006
+    expect(estimateCost(model, analysis)).toBeCloseTo(0.006, 6);
   });
 });
 
