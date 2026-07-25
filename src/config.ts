@@ -104,6 +104,9 @@ const modelSchema = z.object({
   id: z.string(),
   provider: z.string(),
   tier: z.number().int(),
+  // Continuous capability score in [0,1] (benchmark composite). Optional: models
+  // without it fall back to tier/MAX_TIER in the complexity rule (ADR 0003).
+  quality: z.number().min(0).max(1).optional(),
   context_window: z.number().int(),
   max_output_tokens: z.number().int(),
   cost_per_1k_input: z.number(),
@@ -230,6 +233,7 @@ function toDescriptor(
     id: m.id,
     provider: m.provider,
     tier: m.tier,
+    quality: m.quality,
     contextWindow: m.context_window,
     maxOutputTokens: m.max_output_tokens,
     costPer1kInput: m.cost_per_1k_input,

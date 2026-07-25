@@ -17,7 +17,7 @@ forwards — the whole `/v1` surface answers 401. Running on Azure Container App
 a few seconds for a cold start.*
 
 [![live demo](https://img.shields.io/badge/live%20demo-decision%20inspector-7c3aed)](https://llmrouter-app.purplehill-bc78c3f6.eastus2.azurecontainerapps.io)
-![tests](https://img.shields.io/badge/tests-178%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-182%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-88%25%20lines-green)
 ![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2017%2F17%20gold-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-97.7%25-3178c6)
@@ -401,7 +401,7 @@ provider default.
 ## Tests
 
 ```bash
-npm test          # vitest — 178 tests incl. gold routing + judging logic (hermetic)
+npm test          # vitest — 182 tests incl. gold routing + judging logic (hermetic)
 npm run typecheck # tsc --noEmit
 npm run eval      # dry-run routing eval (strategies vs. baselines)
 npm run eval:judge# quality-judged accuracy (spends — real model calls)
