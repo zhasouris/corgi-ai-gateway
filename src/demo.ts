@@ -132,6 +132,8 @@ export function demoHtml(
     cursor: help; }
   table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
   th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #8882; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { text-decoration: underline; }
   tr.win { background: #7c3aed22; font-weight: 600; }
   /* Outranked the chosen model on score but had no API key to call it with. */
   tr.skipped { opacity: 0.55; }
@@ -190,6 +192,7 @@ export function demoHtml(
           <select id="force">${modelOptions}</select>
         </label>
         <button class="go" id="go">Inspect routing</button>
+        <button class="go" id="compare" title="Run best / value / fast on this prompt and show the picks side by side">Compare strategies</button>
         <span class="legend" title="A model is routable when this deployment holds an API key for its provider. Models without one are still ranked — the router just can't forward to them.">
           🟢 ${availableCount}/${models.length} routable · ⚪ no key
         </span>
@@ -254,7 +257,30 @@ export function demoHtml(
       ' — ranked first, but this deployment could not forward to it</span>';
   }
   var btn = document.getElementById('go');
+  var cmpBtn = document.getElementById('compare');
   var out = document.getElementById('out');
+
+  // Client-side sort for the ranked table (P3.3). null col = the router's order.
+  var sortState = { col: null, dir: 1 };
+  var SORT_KEYS = {
+    model: function (r) { return r.model; },
+    vendor: function (r) { return r.provider; },
+    tier: function (r) { return r.tier; },
+    comp: function (r) { return r.competency ? r.competency.score : -1; },
+    score: function (r) { return r.score; },
+    cost: function (r) { return r.estimatedCost; }
+  };
+  function applySort(ranked) {
+    var key = SORT_KEYS[sortState.col];
+    if (!key) return ranked;
+    return ranked.slice().sort(function (a, b) {
+      var x = key(a), y = key(b);
+      if (typeof x === 'string') return sortState.dir * x.localeCompare(y);
+      return sortState.dir * (x - y);
+    });
+  }
+  // Last full render, so a header click can re-sort without re-fetching.
+  var lastRender = null;
 
   function esc(s) {
     return String(s).replace(/[&<>]/g, function (c) {
@@ -331,6 +357,7 @@ export function demoHtml(
   }
 
   function render(data, status, hdrs) {
+    lastRender = { data: data, status: status, hdrs: hdrs };
     if (status !== 200 || data.error) {
       out.innerHTML = '<div class="card err">Error ' + status + ': ' +
         esc(data && data.error ? (data.error.message || JSON.stringify(data.error)) : 'request failed') +
@@ -413,11 +440,17 @@ export function demoHtml(
         return '<td data-label="comp." title="' + esc(tip) + '">' + k.score.toFixed(3) +
           (k.fallback ? '<span class="muted">†</span>' : '') + '</td>';
       }
+      // A clickable, sortable column header (P3.3); shows ▲/▼ for the active sort.
+      function sortTh(col, label, title) {
+        var arrow = sortState.col === col ? (sortState.dir < 0 ? ' ▼' : ' ▲') : '';
+        return '<th class="sortable" data-sort="' + col + '"' +
+          (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + arrow + '</th>';
+      }
       // Competency only applies to benchmark-eligible tasks; for a conversational
       // prompt every row is null. Drop the whole column in that case rather than
       // render a wall of "—" that reads as unfinished (P1.4).
       var hasComp = data.ranked.some(function (r) { return r.competency; });
-      var rows = data.ranked.map(function (r) {
+      var rows = applySort(data.ranked).map(function (r) {
         var cls = r.model === chosen ? 'win' : (passedOver && r.model === topScorer ? 'skipped' : '');
         var note = '';
         if (r.model === chosen) note = ' <span class="tag">chosen</span>';
@@ -441,9 +474,11 @@ export function demoHtml(
       html += '<div class="card"><h3>Ranked candidates</h3>' +
         '<div class="muted" style="font-size:.8rem;margin:.1rem 0 .5rem">⭐ chosen · 🟢 routable · ⚪ no key · <span title="A milli-cent: 1/1000 of a cent, i.e. $0.00001. Per-request costs are fractions of a cent, so this keeps them readable.">m¢ = 1/1000 of a cent</span></div>' +
         '<table class="cards">' +
-        '<tr><th></th><th>model</th><th>vendor</th><th>tier</th>' +
-        (hasComp ? '<th title="Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).">comp.</th>' : '') +
-        '<th>score</th><th title="Projected cost for THIS request (input + output tokens × the model rate), in milli-cents — m¢ = 1/1000 of a cent = $0.00001. Hover a value for the model list price per 1M tokens.">est. cost</th></tr>' + rows + '</table>' +
+        '<tr><th></th>' + sortTh('model', 'model', '') + sortTh('vendor', 'vendor', '') + sortTh('tier', 'tier', '') +
+        (hasComp ? sortTh('comp', 'comp.', 'Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).') : '') +
+        sortTh('score', 'score', '') +
+        sortTh('cost', 'est. cost', 'Projected cost for THIS request (input + output tokens × the model rate), in milli-cents — m¢ = 1/1000 of a cent = $0.00001. Hover a value for the model list price per 1M tokens.') +
+        '</tr>' + rows + '</table>' +
         (hasComp
           ? '<div class="muted" style="margin-top:.4rem">comp. = competency for detected task <code>' +
             esc(compTask) + '</code>; † = tier fallback (no benchmark data). Hover a value for its source.</div>'
@@ -471,11 +506,70 @@ export function demoHtml(
 
     html += '<details><summary>Raw JSON</summary><pre>' + esc(JSON.stringify(data, null, 2)) + '</pre></details>';
     out.innerHTML = html;
+    // Sortable ranked-table headers (P3.3): click to sort by a column, click
+    // again to flip. Numeric columns start descending, text columns ascending.
+    Array.prototype.forEach.call(out.querySelectorAll('th[data-sort]'), function (th) {
+      th.addEventListener('click', function () {
+        var col = th.getAttribute('data-sort');
+        if (sortState.col === col) sortState.dir = -sortState.dir;
+        else { sortState.col = col; sortState.dir = (col === 'model' || col === 'vendor') ? 1 : -1; }
+        render(lastRender.data, lastRender.status, lastRender.hdrs);
+      });
+    });
+  }
+
+  // P3.3 — run all three strategies on ONE prompt and show the picks side by side.
+  async function compareStrategies() {
+    var prompt = document.getElementById('prompt').value;
+    if (!prompt.trim()) return;
+    var body = { messages: [{ role: 'user', content: prompt }] };
+    btn.disabled = true; cmpBtn.disabled = true;
+    out.innerHTML = '<div class="card muted">Comparing best / value / fast…</div>';
+    try {
+      var results = await Promise.all(['best', 'value', 'fast'].map(function (s) {
+        return fetch('/v1/router/explain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Router-Strategy': s },
+          body: JSON.stringify(body)
+        }).then(function (res) {
+          return res.json().then(function (data) { return { strategy: s, data: data }; });
+        });
+      }));
+      renderComparison(results);
+    } catch (e) {
+      out.innerHTML = '<div class="card err">' + esc(e.message) + '</div>';
+    } finally {
+      btn.disabled = false; cmpBtn.disabled = false;
+    }
+  }
+
+  function renderComparison(results) {
+    var picks = results.map(function (r) { return r.data.decision ? r.data.decision.model : null; });
+    var agree = picks.every(function (m) { return m && m === picks[0]; });
+    var note = agree
+      ? 'All three strategies agree on <b>' + esc(picks[0]) + '</b> — for this prompt, capability, cost and latency point the same way.'
+      : 'The strategies <b>diverge</b>: same prompt, different picks. That is the point — <code>best</code> reserves capability, <code>value</code> takes the cheapest and <code>fast</code> the quickest, each <em>within</em> the capability frontier.';
+    var rows = results.map(function (r) {
+      var dec = r.data.decision;
+      if (!dec) return '<tr><td data-label="strategy"><code>' + esc(r.strategy) + '</code></td><td class="muted" colspan="3">no eligible model</td></tr>';
+      var picked = (r.data.ranked || []).filter(function (x) { return x.model === dec.model; })[0];
+      var cost = picked ? fmtCost(picked.estimatedCost) : '—';
+      var dot = AVAILABLE[dec.model] ? '🟢 ' : '⚪ ';
+      return '<tr><td data-label="strategy"><code>' + esc(r.strategy) + '</code></td>' +
+        '<td data-label="routes to">' + dot + '<b>' + esc(dec.model) + '</b> <span class="muted">(' + esc(dec.provider) + ')</span></td>' +
+        '<td data-label="est. cost">' + cost + '</td>' +
+        '<td data-label="why" class="muted" style="font-size:.85em">' + esc(dec.reason) + '</td></tr>';
+    }).join('');
+    out.innerHTML = '<div class="card"><h3>Strategy comparison</h3>' +
+      '<p class="muted" style="margin-top:0">' + note + '</p>' +
+      '<table class="cards"><tr><th>strategy</th><th>routes to</th><th>est. cost</th><th>why</th></tr>' +
+      rows + '</table></div>';
   }
 
   async function submit(bodyOverride) {
     var prompt = document.getElementById('prompt').value;
     if (!bodyOverride && !prompt.trim()) { return; }
+    sortState.col = null;                          // a fresh inspection starts in router order
     var strategy = document.getElementById('strategy').value;
     var force = document.getElementById('force').value;
     var body = bodyOverride || { messages: [{ role: 'user', content: prompt }] };
@@ -526,6 +620,7 @@ export function demoHtml(
   })();
 
   btn.addEventListener('click', function () { submit(); });
+  cmpBtn.addEventListener('click', function () { compareStrategies(); });
 </script>
 </body>
 </html>`;
