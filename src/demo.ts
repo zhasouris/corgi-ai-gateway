@@ -262,12 +262,18 @@ export function demoHtml(
     });
   }
   function pct(x) { return Math.round(x * 100) + '%'; }
-  // Projected per-request cost is tiny for toy prompts; show enough precision
-  // that a real cost never renders as a misleading "$0.00000".
+  // Projected per-request cost is tiny for toy prompts, so a plain "$0.000004"
+  // reads as noise. Show cents-and-up plainly ($0.03), and anything below a cent
+  // in scientific notation ($4.0x10^-6) with real superscript digits — compact,
+  // precise, and honest about the magnitude instead of rounding it to zero.
+  var SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³',
+    '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
   function fmtCost(c) {
     if (!(c > 0)) return '$0';
-    if (c < 0.000001) return '<$0.000001';
-    return '$' + c.toFixed(6);
+    if (c >= 0.01) return '$' + c.toFixed(2);
+    var m = c.toExponential(1).split('e');            // e.g. "4.0e-6" -> ["4.0","-6"]
+    var sup = String(m[1]).replace(/[-0-9]/g, function (d) { return SUP[d]; });
+    return '$' + m[0] + '×10' + sup;             // $4.0x10^-6
   }
 
   // The response headers a real client would read off /v1/chat/completions.
