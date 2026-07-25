@@ -187,6 +187,7 @@ $infraJson = az deployment group create `
     --resource-group $ResourceGroup `
     --name "$NamePrefix-infra" `
     --template-file (Join-Path $PSScriptRoot 'infra.bicep') `
+    --only-show-errors `
     --parameters "location=$Location" "namePrefix=$NamePrefix" `
     --query properties.outputs `
     --output json
@@ -249,6 +250,7 @@ if ($WithRouteLLM) {
         --resource-group $ResourceGroup `
         --name "$NamePrefix-sidecar" `
         --template-file (Join-Path $PSScriptRoot 'sidecar.bicep') `
+        --only-show-errors `
         --parameters `
             "location=$Location" `
             "namePrefix=$NamePrefix" `
@@ -304,6 +306,7 @@ foreach ($attempt in 1..2) {
         --resource-group $ResourceGroup `
         --name "$NamePrefix-app" `
         --template-file (Join-Path $PSScriptRoot 'app.bicep') `
+        --only-show-errors `
         --parameters $appParams `
         --query properties.outputs `
         --output json
