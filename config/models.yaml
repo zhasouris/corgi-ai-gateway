@@ -20,6 +20,7 @@ models:
   - id: gpt-4.1
     provider: openai
     tier: 4
+    quality: 0.642
     context_window: 1047576
     max_output_tokens: 32768
     cost_per_1k_input: 2.00
@@ -32,6 +33,7 @@ models:
   - id: gpt-4.1-mini
     provider: openai
     tier: 3
+    quality: 0.559
     context_window: 1047576
     max_output_tokens: 32768
     cost_per_1k_input: 0.4
@@ -42,6 +44,7 @@ models:
   - id: gpt-4.1-nano
     provider: openai
     tier: 2
+    quality: 0.547
     context_window: 1047576
     max_output_tokens: 32768
     cost_per_1k_input: 0.1
@@ -52,6 +55,7 @@ models:
   - id: o4-mini
     provider: openai
     tier: 5
+    quality: 0.809
     context_window: 200000
     max_output_tokens: 100000
     cost_per_1k_input: 1.1
@@ -67,6 +71,7 @@ models:
   - id: claude-opus-4-8
     provider: anthropic
     tier: 5
+    quality: 0.911
     context_window: 1000000
     max_output_tokens: 128000
     cost_per_1k_input: 5.00
@@ -77,6 +82,7 @@ models:
   - id: claude-sonnet-5
     provider: anthropic
     tier: 4
+    quality: 0.754
     context_window: 1000000
     max_output_tokens: 128000
     cost_per_1k_input: 3.00
@@ -87,6 +93,7 @@ models:
   - id: claude-haiku-4-5
     provider: anthropic
     tier: 2
+    quality: 0.802
     context_window: 200000
     max_output_tokens: 64000
     cost_per_1k_input: 1.00
@@ -98,6 +105,7 @@ models:
   - id: o3
     provider: openai
     tier: 5
+    quality: 0.82
     context_window: 200000
     max_output_tokens: 100000
     cost_per_1k_input: 2.00
@@ -108,6 +116,7 @@ models:
   - id: gpt-4o
     provider: openai
     tier: 4
+    quality: 0.516
     context_window: 128000
     max_output_tokens: 16384
     cost_per_1k_input: 2.5
@@ -118,6 +127,7 @@ models:
   - id: gpt-4o-mini
     provider: openai
     tier: 2
+    quality: 0.682
     context_window: 128000
     max_output_tokens: 16384
     cost_per_1k_input: 0.15
@@ -140,6 +150,7 @@ models:
   - id: gemini-3.1-pro-preview
     provider: google
     tier: 5
+    quality: 0.874
     context_window: 1048576
     max_output_tokens: 65536
     cost_per_1k_input: 2.00 # researched 2026-07-23 (mixed confidence)
@@ -150,6 +161,7 @@ models:
   - id: gemini-3.6-flash
     provider: google
     tier: 3
+    quality: 0.817
     context_window: 1048576
     max_output_tokens: 65536
     cost_per_1k_input: 1.5 # researched 2026-07-23 (mixed confidence)
@@ -160,6 +172,7 @@ models:
   - id: gemini-3.5-flash
     provider: google
     tier: 3
+    quality: 0.56
     context_window: 1048576
     max_output_tokens: 65536
     cost_per_1k_input: 1.5 # researched 2026-07-23 (mixed confidence)
@@ -170,6 +183,7 @@ models:
   - id: gemini-3.5-flash-lite
     provider: google
     tier: 2
+    quality: 0.72
     context_window: 1048576
     max_output_tokens: 65536
     cost_per_1k_input: 0.3 # researched 2026-07-23 (mixed confidence)
@@ -180,6 +194,7 @@ models:
   - id: gemini-3.1-flash-lite
     provider: google
     tier: 2
+    quality: 0.82
     context_window: 1048576
     max_output_tokens: 65536
     cost_per_1k_input: 0.25 # researched 2026-07-23 (mixed confidence)
@@ -191,6 +206,7 @@ models:
   - id: mistral-large-latest
     provider: mistral
     tier: 4
+    quality: 0.685
     context_window: 262144
     max_output_tokens: 8192
     cost_per_1k_input: 0.5
@@ -201,6 +217,7 @@ models:
   - id: mistral-medium-latest
     provider: mistral
     tier: 3
+    quality: 0.78
     context_window: 262144
     max_output_tokens: 8192
     cost_per_1k_input: 1.5
@@ -211,6 +228,7 @@ models:
   - id: mistral-small-latest
     provider: mistral
     tier: 2
+    quality: 0.42
     context_window: 262144
     max_output_tokens: 8192
     cost_per_1k_input: 0.15
@@ -221,6 +239,7 @@ models:
   - id: codestral-latest
     provider: mistral
     tier: 3
+    quality: 0.45
     context_window: 256000
     max_output_tokens: 8192
     cost_per_1k_input: 0.3
@@ -231,6 +250,7 @@ models:
   - id: ministral-8b-latest
     provider: mistral
     tier: 1
+    quality: 0.713
     context_window: 262100
     max_output_tokens: 8192
     cost_per_1k_input: 0.15
@@ -242,6 +262,7 @@ models:
   - id: deepseek-chat
     provider: deepseek
     tier: 3
+    quality: 0.845
     context_window: 1000000
     max_output_tokens: 384000
     cost_per_1k_input: 0.14
@@ -252,6 +273,7 @@ models:
   - id: deepseek-reasoner
     provider: deepseek
     tier: 5
+    quality: 0.773
     context_window: 1000000
     max_output_tokens: 384000
     cost_per_1k_input: 0.14
@@ -263,6 +285,7 @@ models:
   - id: grok-4
     provider: xai
     tier: 5
+    quality: 0.858
     context_window: 256000
     max_output_tokens: 32768
     cost_per_1k_input: 3.00
@@ -273,6 +296,7 @@ models:
   - id: grok-3
     provider: xai
     tier: 4
+    quality: 0.837
     context_window: 131072
     max_output_tokens: 32768
     cost_per_1k_input: 3.00
@@ -283,6 +307,7 @@ models:
   - id: grok-3-mini
     provider: xai
     tier: 2
+    quality: 0.853
     context_window: 131072
     max_output_tokens: 32768
     cost_per_1k_input: 0.3
@@ -294,6 +319,7 @@ models:
   - id: llama-3.3-70b-versatile
     provider: groq
     tier: 3
+    quality: 0.68
     context_window: 131072
     max_output_tokens: 32768
     cost_per_1k_input: 0.59
@@ -304,6 +330,7 @@ models:
   - id: llama-3.1-8b-instant
     provider: groq
     tier: 1
+    quality: 0.453
     context_window: 131072
     max_output_tokens: 8192
     cost_per_1k_input: 0.05
@@ -314,6 +341,7 @@ models:
   - id: gemma2-9b-it
     provider: groq
     tier: 1
+    quality: 0.457
     context_window: 8192
     max_output_tokens: 8192
     cost_per_1k_input: 0.2
@@ -325,6 +353,7 @@ models:
   - id: qwen2.5-72b-instruct-turbo
     provider: together
     tier: 3
+    quality: 0.674
     context_window: 32768
     max_output_tokens: 8192
     cost_per_1k_input: 1.2
@@ -335,6 +364,7 @@ models:
   - id: qwen2.5-coder-32b-instruct
     provider: together
     tier: 3
+    quality: 0.523
     context_window: 32768
     max_output_tokens: 8192
     cost_per_1k_input: 0.8
@@ -345,6 +375,7 @@ models:
   - id: meta-llama-3.1-405b-instruct-turbo
     provider: together
     tier: 4
+    quality: 0.683
     context_window: 130815
     max_output_tokens: 4096
     cost_per_1k_input: 3.5
@@ -356,6 +387,7 @@ models:
   - id: command-r-plus
     provider: cohere
     tier: 3
+    quality: 0.48
     context_window: 128000
     max_output_tokens: 4096
     cost_per_1k_input: 2.5
@@ -366,6 +398,7 @@ models:
   - id: command-r
     provider: cohere
     tier: 2
+    quality: 0.39
     context_window: 128000
     max_output_tokens: 4096
     cost_per_1k_input: 0.15

@@ -44,13 +44,25 @@ export const expectedOutputRule: FeatureRule = {
 
 export const complexityRule: FeatureRule = {
   name: "complexity",
+  // fixedScale on purpose: the MAGNITUDE of the spread must be preserved. On an
+  // easy prompt capability barely separates models, so the spread stays small and
+  // the frontier stays WIDE (value can reach a genuinely cheap model); on a hard
+  // prompt the spread widens and the frontier narrows to strong models. min-max
+  // would erase that by always stretching the spread to fill 0..1 — which starves
+  // value of cheap options on easy prompts (it gets trapped on the lowest-quality
+  // model, which isn't the cheapest).
+  fixedScale: true,
   extract(_req, analysis) {
     const v = clamp01(analysis.classifier.complexity);
     return f("complexity", v, v);
   },
   scoreModel(model, signal) {
-    // High complexity -> favor higher tier; low complexity -> favor lower tier.
-    return model.tier * (2 * signal.value - 1);
+    // Centered on 0.5: high complexity tilts toward high capability, low toward
+    // low. Continuous `quality` (benchmark composite) keeps scores distinct
+    // *within* a tier so Q is no longer a tier step-function (ADR 0003 / 0017);
+    // tier/MAX_TIER is the fallback when a model has no quality score.
+    const capability = model.quality ?? model.tier / MAX_TIER;
+    return 0.5 + (capability - 0.5) * (2 * signal.value - 1);
   },
 };
 
@@ -77,14 +89,25 @@ export const taskTypeRule: FeatureRule = {
     const task = analysis.classifier.taskType;
     // value gates the rule: 1 for a benchmark-eligible task, 0 for the generic
     // `conversation` default (which stays neutral, as under the old tier×hard rule).
-    return f("task_type", COMPETENCY_TASKS.has(task) ? 1 : 0, task, { task });
+    // Carry complexity so competency can be scaled by how hard the prompt is.
+    return f("task_type", COMPETENCY_TASKS.has(task) ? 1 : 0, task, {
+      task,
+      complexity: clamp01(analysis.classifier.complexity),
+    });
   },
   scoreModel(model, signal) {
     if (!signal.value) return 0;
     const task = String(signal.raw);
     // Seeded competency for this task if we have it, else a tier-derived fallback
     // so a model with no competency data is treated exactly as before (by tier).
-    return model.competency?.[task]?.score ?? model.tier / MAX_TIER;
+    const competency = model.competency?.[task]?.score ?? model.tier / MAX_TIER;
+    // Competency matters in proportion to DIFFICULTY: a trivial prompt in a
+    // benchmark category (e.g. "solve x+7=12") doesn't need the best-at-task
+    // model, so the spread shrinks toward neutral (0.5) and the frontier widens
+    // — keeping value/fast on a cheap model. A hard prompt (c->1) restores the
+    // full competency spread, reserving the strong model.
+    const c = typeof signal.metadata?.complexity === "number" ? signal.metadata.complexity : 0.5;
+    return 0.5 + (competency - 0.5) * c;
   },
 };
 

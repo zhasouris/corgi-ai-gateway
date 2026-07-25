@@ -165,6 +165,10 @@ export interface ModelDescriptor {
   id: string;
   provider: string;
   tier: number;
+  /** Continuous benchmark-weighted capability score in [0,1] (the composite from
+   *  docs/process/model-scores.json). Drives the complexity rule so scoring
+   *  discriminates *within* a tier; falls back to tier/MAX_TIER when absent. */
+  quality?: number;
   contextWindow: number;
   maxOutputTokens: number;
   costPer1kInput: number;
