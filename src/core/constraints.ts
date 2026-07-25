@@ -38,6 +38,19 @@ export const audioConstraint: ConstraintRule = {
   admits: (model, req) => (req.requiresAudio ? supports(model, "audio") : true),
 };
 
+/**
+ * Generation-parameter compatibility (ADR 0003): a request that sets a non-default
+ * `temperature` must not route to a model that only accepts temperature=1 (the
+ * OpenAI o-series 400s on anything else). Keyed on the explicit `fixedTemperature`
+ * catalog flag — NOT on the `reasoning` capability, because non-OpenAI reasoning
+ * models (Claude, Gemini, DeepSeek, Grok) accept a custom temperature fine.
+ */
+export const temperatureConstraint: ConstraintRule = {
+  name: "temperature",
+  admits: (model, req) =>
+    req.requiresCustomTemperature ? !model.fixedTemperature : true,
+};
+
 /** The bridge filter (ADR 0003): input + expected output must fit. */
 export const contextWindowConstraint: ConstraintRule = {
   name: "context_window",
@@ -53,5 +66,6 @@ export const ALL_CONSTRAINTS: ConstraintRule[] = [
   toolsConstraint,
   structuredOutputConstraint,
   audioConstraint,
+  temperatureConstraint,
   contextWindowConstraint,
 ];

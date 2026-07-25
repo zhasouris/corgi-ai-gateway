@@ -69,6 +69,7 @@ export interface Requirements {
   requiresTools: boolean;
   requiresStructuredOutput: boolean;
   requiresAudio: boolean;
+  requiresCustomTemperature: boolean;
 }
 
 export function detectRequirements(req: ChatCompletionRequest): Requirements {
@@ -79,5 +80,8 @@ export function detectRequirements(req: ChatCompletionRequest): Requirements {
     ),
     requiresStructuredOutput: needsStructuredOutput(req),
     requiresAudio: hasAudio(req),
+    // A non-default temperature must not land on a model that only accepts 1
+    // (OpenAI o-series 400s otherwise). Default/unset temperature is unconstrained.
+    requiresCustomTemperature: req.temperature != null && req.temperature !== 1,
   };
 }

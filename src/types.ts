@@ -73,6 +73,9 @@ export interface ChatCompletionRequest {
   modalities?: string[];
   max_tokens?: number;
   max_completion_tokens?: number;
+  /** Sampling temperature. Some models (OpenAI o-series) only accept the
+   *  default (1) and 400 on any other value — see the temperature constraint. */
+  temperature?: number;
   [key: string]: unknown;
 }
 
@@ -103,6 +106,10 @@ export interface RoutingRequest {
   requiresTools: boolean;
   requiresStructuredOutput: boolean;
   requiresAudio: boolean;
+  /** The request sets a non-default `temperature`, so models that only accept
+   *  temperature=1 (OpenAI o-series) must be filtered out. Set by
+   *  detectRequirements; optional here so existing callers/tests need no change. */
+  requiresCustomTemperature?: boolean;
 }
 
 /** Structured output from the single classifier call (ADR 0003). */
@@ -175,6 +182,10 @@ export interface ModelDescriptor {
   costPer1kOutput: number;
   avgLatencyMs: number;
   capabilities: Set<Capability>;
+  /** True when the model only accepts the default sampling `temperature` (1) and
+   *  rejects any other value — the OpenAI o-series quirk. Absent = accepts custom
+   *  temperature. Keyed by the temperature routing constraint. */
+  fixedTemperature?: boolean;
   /** Optional env var holding this model's own API key (for per-model billing);
    *  falls back to the provider default key when unset. */
   apiKeyEnv?: string;

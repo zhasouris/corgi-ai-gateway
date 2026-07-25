@@ -37,6 +37,7 @@ models:
     cost_per_1k_output: 4.40
     avg_latency_ms: 4000
     capabilities: [tools, structured_output, reasoning]
+    fixed_temperature: true # o-series: only temperature=1
   - id: claude-opus-4-8
     provider: anthropic
     tier: 5
