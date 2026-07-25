@@ -134,6 +134,12 @@ export function demoHtml(
   th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #8882; }
   th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
   th.sortable:hover { text-decoration: underline; }
+  /* Side-by-side strategy comparison (P3.3): best | value | fast as columns. */
+  .cmp-cols { display: flex; gap: 0.75rem; align-items: stretch; }
+  .cmp-col { flex: 1 1 0; min-width: 0; border: 1px solid #8883; border-radius: 8px; padding: 0.6rem 0.7rem; }
+  .cmp-h { font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .cmp-model { font-size: 1.05rem; margin-top: 0.2rem; word-break: break-word; }
+  @media (max-width: 600px) { .cmp-cols { flex-direction: column; } }
   tr.win { background: #7c3aed22; font-weight: 600; }
   /* Outranked the chosen model on score but had no API key to call it with. */
   tr.skipped { opacity: 0.55; }
@@ -268,8 +274,12 @@ export function demoHtml(
     tier: function (r) { return r.tier; },
     comp: function (r) { return r.competency ? r.competency.score : -1; },
     score: function (r) { return r.score; },
-    cost: function (r) { return r.estimatedCost; }
+    cost: function (r) { return r.estimatedCost; },
+    latency: function (r) { return r.latencyMs; }
   };
+  // Default direction on first click: cheapest/fastest/A-Z first where that reads
+  // naturally, strongest first for the capability-ish columns.
+  var SORT_DIR = { model: 1, vendor: 1, tier: -1, comp: -1, score: -1, cost: 1, latency: 1 };
   function applySort(ranked) {
     var key = SORT_KEYS[sortState.col];
     if (!key) return ranked;
@@ -467,7 +477,8 @@ export function demoHtml(
         return '<tr class="' + cls + '"><td data-label="">' + indicator + '</td><td data-label="model">' +
           esc(r.model) + note + '</td><td data-label="vendor">' + vendorCell(r.provider) + '</td><td data-label="tier">' + esc(r.tier) +
           '</td>' + (hasComp ? compCell(r) : '') + '<td data-label="score">' + r.score.toFixed(3) + '</td>' +
-          '<td data-label="est. cost" title="' + esc(rateTip) + '">' + fmtCost(r.estimatedCost) + '</td></tr>';
+          '<td data-label="est. cost" title="' + esc(rateTip) + '">' + fmtCost(r.estimatedCost) + '</td>' +
+          '<td data-label="latency">' + esc(r.latencyMs) + ' ms</td></tr>';
       }).join('');
       var compTask = hasComp && data.ranked[0].competency ? data.ranked[0].competency.task : null;
       var detectedTask = data.classifier ? data.classifier.taskType : null;
@@ -476,8 +487,9 @@ export function demoHtml(
         '<table class="cards">' +
         '<tr><th></th>' + sortTh('model', 'model', '') + sortTh('vendor', 'vendor', '') + sortTh('tier', 'tier', '') +
         (hasComp ? sortTh('comp', 'comp.', 'Per-task competency (0-1) that fed the task_type rule for the detected task (ADR 0010). Hover a value for its source; † = tier fallback (no benchmark data).') : '') +
-        sortTh('score', 'score', '') +
-        sortTh('cost', 'est. cost', 'Projected cost for THIS request (input + output tokens × the model rate), in milli-cents — m¢ = 1/1000 of a cent = $0.00001. Hover a value for the model list price per 1M tokens.') +
+        sortTh('score', 'score', 'Capability score Q — how good this model is for the detected task (best optimises this).') +
+        sortTh('cost', 'est. cost', 'Projected cost for THIS request (input + output tokens × the model rate), in milli-cents — m¢ = 1/1000 of a cent = $0.00001. value optimises this. Hover a value for the model list price per 1M tokens.') +
+        sortTh('latency', 'latency', 'Seed average response latency in ms (fast optimises this; overridden by live telemetry later).') +
         '</tr>' + rows + '</table>' +
         (hasComp
           ? '<div class="muted" style="margin-top:.4rem">comp. = competency for detected task <code>' +
@@ -512,7 +524,7 @@ export function demoHtml(
       th.addEventListener('click', function () {
         var col = th.getAttribute('data-sort');
         if (sortState.col === col) sortState.dir = -sortState.dir;
-        else { sortState.col = col; sortState.dir = (col === 'model' || col === 'vendor') ? 1 : -1; }
+        else { sortState.col = col; sortState.dir = SORT_DIR[col] || 1; }
         render(lastRender.data, lastRender.status, lastRender.hdrs);
       });
     });
@@ -549,21 +561,31 @@ export function demoHtml(
     var note = agree
       ? 'All three strategies agree on <b>' + esc(picks[0]) + '</b> — for this prompt, capability, cost and latency point the same way.'
       : 'The strategies <b>diverge</b>: same prompt, different picks. That is the point — <code>best</code> reserves capability, <code>value</code> takes the cheapest and <code>fast</code> the quickest, each <em>within</em> the capability frontier.';
-    var rows = results.map(function (r) {
+    var OPT = { best: 'strongest', value: 'cheapest in frontier', fast: 'fastest in frontier' };
+    var cols = results.map(function (r) {
       var dec = r.data.decision;
-      if (!dec) return '<tr><td data-label="strategy"><code>' + esc(r.strategy) + '</code></td><td class="muted" colspan="3">no eligible model</td></tr>';
+      if (!dec) {
+        return '<div class="cmp-col"><div class="cmp-h"><code>' + esc(r.strategy) +
+          '</code></div><div class="muted">no eligible model</div></div>';
+      }
       var picked = (r.data.ranked || []).filter(function (x) { return x.model === dec.model; })[0];
       var cost = picked ? fmtCost(picked.estimatedCost) : '—';
+      var lat = picked ? (esc(picked.latencyMs) + ' ms') : '—';
       var dot = AVAILABLE[dec.model] ? '🟢 ' : '⚪ ';
-      return '<tr><td data-label="strategy"><code>' + esc(r.strategy) + '</code></td>' +
-        '<td data-label="routes to">' + dot + '<b>' + esc(dec.model) + '</b> <span class="muted">(' + esc(dec.provider) + ')</span></td>' +
-        '<td data-label="est. cost">' + cost + '</td>' +
-        '<td data-label="why" class="muted" style="font-size:.85em">' + esc(dec.reason) + '</td></tr>';
+      return '<div class="cmp-col">' +
+        '<div class="cmp-h"><code>' + esc(r.strategy) + '</code> <span class="muted">' + OPT[r.strategy] + '</span></div>' +
+        '<div class="cmp-model">' + dot + '<b>' + esc(dec.model) + '</b></div>' +
+        '<div class="muted" style="font-size:.85em">' + esc(dec.provider) + '</div>' +
+        '<div class="kv" style="margin:.45rem 0;font-size:.85rem">' +
+          '<div class="muted">est. cost</div><div>' + cost + '</div>' +
+          '<div class="muted">latency</div><div>' + lat + '</div>' +
+        '</div>' +
+        '<div class="muted" style="font-size:.8em">' + esc(dec.reason) + '</div>' +
+      '</div>';
     }).join('');
     out.innerHTML = '<div class="card"><h3>Strategy comparison</h3>' +
       '<p class="muted" style="margin-top:0">' + note + '</p>' +
-      '<table class="cards"><tr><th>strategy</th><th>routes to</th><th>est. cost</th><th>why</th></tr>' +
-      rows + '</table></div>';
+      '<div class="cmp-cols">' + cols + '</div></div>';
   }
 
   async function submit(bodyOverride) {
