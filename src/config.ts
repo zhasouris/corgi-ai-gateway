@@ -114,6 +114,9 @@ const modelSchema = z.object({
   avg_latency_ms: z.number().int(),
   capabilities: z.array(z.enum(CAPABILITIES)).default([]),
   api_key_env: z.string().optional(),
+  // True for models that only accept the default sampling temperature (1) and
+  // 400 on any other value — the OpenAI o-series. Gates the temperature constraint.
+  fixed_temperature: z.boolean().optional(),
 });
 
 const catalogSchema = z.object({ models: z.array(modelSchema).min(1) });
@@ -241,6 +244,7 @@ function toDescriptor(
     avgLatencyMs: m.avg_latency_ms,
     capabilities: new Set<Capability>(m.capabilities),
     apiKeyEnv: m.api_key_env,
+    fixedTemperature: m.fixed_temperature,
     competency,
   };
 }
