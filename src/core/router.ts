@@ -337,6 +337,9 @@ export class Router {
       // inspector shows on hover so the tiny per-request figure is interpretable.
       ratePer1MInput: s.model.costPer1kInput,
       ratePer1MOutput: s.model.costPer1kOutput,
+      // Seed latency (ms) — the third objective axis (`fast`), so the inspector
+      // can show capability / cost / latency side by side.
+      latencyMs: s.model.avgLatencyMs,
     }));
 
     // Same choice the forwarding path would make, so the inspector reports the
@@ -418,6 +421,8 @@ export interface ExplainResult {
     ratePer1MInput: number;
     /** Model list price, USD per 1,000,000 tokens (output). */
     ratePer1MOutput: number;
+    /** Seed average latency in ms (the `fast` objective axis). */
+    latencyMs: number;
   }[];
   decision: { model: string; provider: string; reason: string } | null;
   warnings: string[];
