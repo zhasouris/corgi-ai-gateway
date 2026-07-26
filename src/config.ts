@@ -98,6 +98,8 @@ const strategiesSchema = z.object({
   frontier_delta: z.number().min(0).max(1).default(0.12),
   tie_epsilon: z.number().min(0).max(1).default(0.05),
   strategies: z.record(z.enum(OBJECTIVES)),
+  // Per-strategy frontier width override; 1.0 = no capability gate (ADR 0021).
+  strategy_frontier_delta: z.record(z.number().min(0).max(1)).default({}),
 });
 
 const modelSchema = z.object({
@@ -144,6 +146,9 @@ export interface RoutingConfig {
   tieEpsilon: number;
   /** Each strategy's objective within the frontier. */
   objectives: Record<string, Objective>;
+  /** Per-strategy frontier width override; falls back to `frontierDelta`. 1.0 means
+   *  "no capability gate" — optimize the objective over all eligible (ADR 0021). */
+  frontierDeltaByStrategy: Record<string, number>;
 }
 
 export interface AppConfig {
@@ -313,6 +318,7 @@ export function getConfig(): AppConfig {
       frontierDelta: strategyBook.frontier_delta,
       tieEpsilon: strategyBook.tie_epsilon,
       objectives: strategyBook.strategies,
+      frontierDeltaByStrategy: strategyBook.strategy_frontier_delta,
     },
     catalog,
     secrets: {

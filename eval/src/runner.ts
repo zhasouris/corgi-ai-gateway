@@ -5,7 +5,7 @@ import { Router } from "../../src/core/router.js";
 import { filterCandidates } from "../../src/core/scoring.js";
 import { HeuristicSignalProvider, type SignalProvider } from "../../src/core/signal.js";
 import {
-  STRATEGIES,
+  CANONICAL_STRATEGIES,
   type ModelDescriptor,
   type RoutingRequest,
   type Strategy,
@@ -58,7 +58,7 @@ export async function runEval(dataset: Scenario[], opts: RunOptions = {}): Promi
   const config = getConfig();
   const byId = new Map(config.catalog.map((m) => [m.id, m]));
   const provider = opts.provider ?? new HeuristicSignalProvider();
-  const strategies = opts.strategies ?? [...STRATEGIES];
+  const strategies = opts.strategies ?? [...CANONICAL_STRATEGIES];
   const router = new Router(config, makeAnalyze(provider));
 
   const results: RunResult[] = [];

@@ -189,9 +189,11 @@ export function demoHtml(
       <div class="row">
         <label>Strategy
           <select id="strategy">
-            <option value="value">value</option>
             <option value="best">best</option>
-            <option value="fast">fast</option>
+            <option value="cheapest-capable" selected>cheapest-capable</option>
+            <option value="cheapest">cheapest</option>
+            <option value="fastest-capable">fastest-capable</option>
+            <option value="fastest">fastest</option>
           </select>
         </label>
         <label>Force model
@@ -545,7 +547,7 @@ export function demoHtml(
     btn.disabled = true; cmpBtn.disabled = true;
     out.innerHTML = '<div class="card muted">Comparing best / value / fast…</div>';
     try {
-      var results = await Promise.all(['best', 'value', 'fast'].map(function (s) {
+      var results = await Promise.all(['best', 'cheapest-capable', 'cheapest', 'fastest-capable', 'fastest'].map(function (s) {
         return fetch('/v1/router/explain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Router-Strategy': s },
@@ -568,7 +570,7 @@ export function demoHtml(
     var note = agree
       ? 'All three strategies agree on <b>' + esc(picks[0]) + '</b> — for this prompt, capability, cost and latency point the same way.'
       : 'The strategies <b>diverge</b>: same prompt, different picks. That is the point — <code>best</code> reserves capability, <code>value</code> takes the cheapest and <code>fast</code> the quickest, each <em>within</em> the capability frontier.';
-    var OPT = { best: 'strongest', value: 'cheapest in frontier', fast: 'fastest in frontier' };
+    var OPT = { best: 'strongest', 'cheapest-capable': 'cheapest capable', cheapest: 'cheapest overall', 'fastest-capable': 'fastest capable', fastest: 'fastest overall' };
     var cols = results.map(function (r) {
       var dec = r.data.decision;
       if (!dec) {

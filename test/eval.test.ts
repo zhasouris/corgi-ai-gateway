@@ -60,7 +60,7 @@ describe("runEval", () => {
   it("produces results for every strategy and baseline, hermetically", async () => {
     const results = await runEval(dataset);
     const groups = new Set(results.map((r) => r.group));
-    expect(groups.has("strategy:value")).toBe(true);
+    expect(groups.has("strategy:cheapest-capable")).toBe(true);
     expect(groups.has("strategy:best")).toBe(true);
     expect(groups.has("baseline:always-cheapest")).toBe(true);
     expect(groups.has("baseline:always-strongest")).toBe(true);
@@ -75,10 +75,10 @@ describe("runEval", () => {
     expect(hard.tier).toBeGreaterThan(easy.tier);
   });
 
-  it("value strategy is never more expensive on average than always-strongest", async () => {
+  it("cheapest-capable strategy is never more expensive on average than always-strongest", async () => {
     const results = await runEval(dataset);
     const stats = aggregate(results);
-    const cost = stats.find((s) => s.group === "strategy:value")!;
+    const cost = stats.find((s) => s.group === "strategy:cheapest-capable")!;
     const strongest = stats.find((s) => s.group === "baseline:always-strongest")!;
     expect(cost.meanCost).toBeLessThanOrEqual(strongest.meanCost);
   });

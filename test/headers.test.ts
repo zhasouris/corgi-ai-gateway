@@ -18,9 +18,15 @@ describe("header contract", () => {
   });
 
   it("known strategy parses", () => {
-    const opts = parseOptions(getter({ "x-router-strategy": "value" }), "value");
-    expect(opts.strategy).toBe("value");
+    const opts = parseOptions(getter({ "x-router-strategy": "cheapest" }), "cheapest-capable");
+    expect(opts.strategy).toBe("cheapest");
     expect(opts.warnings).toHaveLength(0);
+  });
+
+  it("accepts a deprecated alias but warns", () => {
+    const opts = parseOptions(getter({ "x-router-strategy": "value" }), "cheapest-capable");
+    expect(opts.strategy).toBe("value");
+    expect(opts.warnings.some((w) => /deprecated/.test(w))).toBe(true);
   });
 
   it("bypass truthiness", () => {
