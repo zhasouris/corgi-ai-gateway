@@ -46,19 +46,24 @@ function buildDeps(): AppDeps {
 /**
  * Wire the signal provider per strategy (ADR 0012).
  *
- * `fast` deliberately does NOT pay for the ~1s LLM classifier: it optimizes for
- * latency within the frontier (ADR 0017), so shaving ~1s off the routing decision
- * matters more than a marginally sharper capability signal. It uses RouteLLM when
- * a sidecar is configured (a real difficulty signal at ~250ms) and otherwise the
- * offline heuristic (~0ms) — never the classifier. Every other strategy keeps the
+ * The latency strategies (`fastest-capable`, `fastest`, and the deprecated `fast`
+ * alias) deliberately do NOT pay for the ~1s LLM classifier: they optimize for
+ * latency (ADR 0017/0021), so shaving ~1s off the routing decision matters more
+ * than a marginally sharper capability signal. They use RouteLLM when a sidecar is
+ * configured (a real difficulty signal at ~250ms) and otherwise the offline
+ * heuristic (~0ms) — never the classifier. Every other strategy keeps the
  * classifier default, where complexity/reasoning carry real weight.
  */
 function buildRouter(config: AppConfig): Router {
   const rl = config.server.routellm;
-  const fast: AnalyzeFn = rl.enabled
+  const fastSignal: AnalyzeFn = rl.enabled
     ? makeAnalyze(new RouteLLMProvider(rl.url))
     : makeAnalyze(new HeuristicSignalProvider(config.server.classifier.max_input_chars));
-  return new Router(config, undefined, { fast });
+  return new Router(config, undefined, {
+    "fastest-capable": fastSignal,
+    fastest: fastSignal,
+    fast: fastSignal, // deprecated alias of fastest-capable
+  });
 }
 
 function errorResponse(message: string, status: 400 | 401, type: string): Response {

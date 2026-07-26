@@ -8,8 +8,40 @@
 
 // Frontier-then-optimize strategies (ADR 0017). Each optimizes one objective
 // within the capability frontier for the task.
-export const STRATEGIES = ["best", "value", "fast"] as const;
+// Routing strategies (ADR 0021) — objective × capability-gate:
+//   best             — strongest model for the task (capability)
+//   cheapest-capable — cheapest model IN the capability frontier
+//   cheapest         — cheapest eligible model (no capability gate)
+//   fastest-capable  — fastest model IN the capability frontier
+//   fastest          — fastest eligible model (no capability gate)
+// `value` and `fast` remain as DEPRECATED aliases of cheapest-capable /
+// fastest-capable so the X-Router-Strategy contract (ADR 0002) never breaks.
+export const STRATEGIES = [
+  "best",
+  "cheapest-capable",
+  "cheapest",
+  "fastest-capable",
+  "fastest",
+  "value",
+  "fast",
+] as const;
 export type Strategy = (typeof STRATEGIES)[number];
+
+/** Deprecated strategy aliases → their canonical name (for warnings + docs). */
+export const STRATEGY_ALIASES: Record<string, Strategy> = {
+  value: "cheapest-capable",
+  fast: "fastest-capable",
+};
+
+/** The canonical strategies only (no deprecated aliases) — used for enumeration
+ *  and reporting (eval, baseline, the demo) so aliases don't duplicate rows. */
+export const CANONICAL_STRATEGIES: readonly Strategy[] = [
+  "best",
+  "cheapest-capable",
+  "cheapest",
+  "fastest-capable",
+  "fastest",
+];
 
 export function isStrategy(v: string): v is Strategy {
   return (STRATEGIES as readonly string[]).includes(v);

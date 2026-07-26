@@ -41,9 +41,15 @@ describe("baseline delta report", () => {
     resetConfigCache();
   });
 
-  it("diffs the router against a base model across best/value/fast", async () => {
+  it("diffs the router against a base model across the canonical strategies", async () => {
     const r = await baselineReport(dataset, "gpt-4.1-mini", "test");
-    expect(r.strategies.map((s) => s.strategy).sort()).toEqual(["best", "fast", "value"]);
+    expect(r.strategies.map((s) => s.strategy).sort()).toEqual([
+      "best",
+      "cheapest",
+      "cheapest-capable",
+      "fastest",
+      "fastest-capable",
+    ]);
 
     for (const s of r.strategies) {
       const c = s.counts;
@@ -54,9 +60,9 @@ describe("baseline delta report", () => {
     }
   });
 
-  it("value never costs more than always-using a strong base", async () => {
+  it("cheapest-capable never costs more than always-using a strong base", async () => {
     const r = await baselineReport(dataset, "o3", "test");
-    const value = r.strategies.find((s) => s.strategy === "value")!;
+    const value = r.strategies.find((s) => s.strategy === "cheapest-capable")!;
     expect(value.cost.router).toBeLessThanOrEqual(value.cost.base);
   });
 

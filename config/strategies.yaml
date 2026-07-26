@@ -23,7 +23,22 @@ frontier_delta: 0.12
 tie_epsilon: 0.05
 
 # Each strategy → the objective it optimizes within the frontier.
+# Each strategy → the objective it optimizes. Two axes (ADR 0021): the objective
+# (capability / cost / latency) and whether it is gated to the capability frontier
+# (`-capable`) or ranges over ALL eligible models (the bare `cheapest`/`fastest`).
 strategies:
   best: capability # the frontier top — strongest model, price-blind
-  value: cost # cheapest model in the frontier
-  fast: latency # fastest model in the frontier
+  cheapest-capable: cost # cheapest model IN the capability frontier
+  cheapest: cost # cheapest eligible model — no capability gate
+  fastest-capable: latency # fastest model IN the capability frontier
+  fastest: latency # fastest eligible model — no capability gate
+  # Deprecated aliases (ADR 0021), kept so old callers never break.
+  value: cost # = cheapest-capable
+  fast: latency # = fastest-capable
+
+# Frontier width per strategy — a width of 1.0 means "no capability gate": the
+# objective is optimized over EVERY eligible model, not just the frontier. Any
+# strategy absent here uses the shared `frontier_delta` above.
+strategy_frontier_delta:
+  cheapest: 1.0
+  fastest: 1.0

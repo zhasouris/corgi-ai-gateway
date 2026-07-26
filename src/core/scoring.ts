@@ -147,11 +147,17 @@ export function topReason(
   objective: Objective,
   runnerUp?: ScoredModel,
 ): string {
+  // `cheapest`/`fastest` optimize over ALL eligible models, not just the frontier.
+  const gated = strategy !== "cheapest" && strategy !== "fastest";
   const how =
     objective === "cost"
-      ? "cheapest in the capability frontier"
+      ? gated
+        ? "cheapest in the capability frontier"
+        : "cheapest eligible model (no capability gate)"
       : objective === "latency"
-        ? "fastest in the capability frontier"
+        ? gated
+          ? "fastest in the capability frontier"
+          : "fastest eligible model (no capability gate)"
         : "cheapest of the statistically-top models";
   return `${strategy}: ${how} (capability ${top.score.toFixed(2)})${runnerUpNote(top, runnerUp, objective)}`;
 }

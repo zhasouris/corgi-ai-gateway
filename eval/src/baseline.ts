@@ -6,7 +6,7 @@ import { filterCandidates } from "../../src/core/scoring.js";
 import { HeuristicSignalProvider, type SignalProvider } from "../../src/core/signal.js";
 import {
   MAX_TIER,
-  STRATEGIES,
+  CANONICAL_STRATEGIES,
   type ModelDescriptor,
   type RequestAnalysis,
   type RoutingRequest,
@@ -146,12 +146,13 @@ export async function baselineReport(
     const benchBaseInfo = taskBenchmark(base, task);
     const clsCost = classifierCost(a);
 
-    for (const strategy of STRATEGIES) {
+    for (const strategy of CANONICAL_STRATEGIES) {
       const { decision, analysis: a2 } = await router.decide(build(sc, strategy));
       const routerModel = byId.get(decision.modelId)!;
-      // Classifier overhead is real routing cost the base never pays; `fast`
-      // uses the free heuristic signal so it pays none.
-      const routingOverhead = strategy === "fast" ? 0 : clsCost;
+      // Classifier overhead is real routing cost the base never pays; the latency
+      // strategies use the free heuristic signal so they pay none (ADR 0012/0021).
+      const isLatency = strategy === "fastest-capable" || strategy === "fastest";
+      const routingOverhead = isLatency ? 0 : clsCost;
       const routerCost = estimateCost(routerModel, a2!) + routingOverhead;
       const compRouter = competency(routerModel, task);
       const benchRouterInfo = taskBenchmark(routerModel.id, task);
@@ -184,7 +185,7 @@ export async function baselineReport(
     }
   }
 
-  const strategies = STRATEGIES.map((strategy) => summarize(deltas.filter((d) => d.strategy === strategy), strategy));
+  const strategies = CANONICAL_STRATEGIES.map((strategy) => summarize(deltas.filter((d) => d.strategy === strategy), strategy));
   return { base, dataset: datasetName, scenarios: dataset.length, strategies, deltas };
 }
 

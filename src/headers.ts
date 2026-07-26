@@ -5,7 +5,7 @@
  * upstream (invariant #11). Outbound headers report the decision (invariant #12).
  */
 
-import { isStrategy, type RouterOptions, type Strategy } from "./types.js";
+import { isStrategy, STRATEGY_ALIASES, type RouterOptions, type Strategy } from "./types.js";
 
 export const H_STRATEGY = "x-router-strategy";
 export const H_BYPASS = "x-router-bypass";
@@ -33,6 +33,8 @@ export function parseOptions(get: HeaderGet, defaultStrategy: Strategy): RouterO
     const v = rawStrategy.trim().toLowerCase();
     if (isStrategy(v)) {
       strategy = v;
+      const canonical = STRATEGY_ALIASES[v];
+      if (canonical) warnings.push(`strategy '${v}' is deprecated; use '${canonical}'`);
     } else {
       warnings.push(`unknown strategy '${rawStrategy}', falling back to '${defaultStrategy}'`);
     }

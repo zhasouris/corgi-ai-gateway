@@ -17,9 +17,9 @@ forwards — the whole `/v1` surface answers 401. Running on Azure Container App
 a few seconds for a cold start.*
 
 [![live demo](https://img.shields.io/badge/live%20demo-decision%20inspector-7c3aed)](https://llmrouter-app.purplehill-bc78c3f6.eastus2.azurecontainerapps.io)
-![tests](https://img.shields.io/badge/tests-190%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-197%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-88%25%20lines-green)
-![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2021%2F21%20gold-brightgreen)
+![routing eval](https://img.shields.io/badge/routing-83%25%20judged%20%7C%2023%2F23%20gold-brightgreen)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-instrumented-f5a800)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -60,7 +60,7 @@ flowchart LR
 - **A real per-request decision**, not load-balancing: easy prompts fall to a cheap/fast
   model, hard prompts reserve the expensive one — per request, not per app.
 - **Measured, not hoped.** A built-in eval harness scores routing against provable gold
-  cases (**21/21**) and LLM-judged ground truth (**83%** accuracy, 0% over-routing).
+  cases (**23/23**) and LLM-judged ground truth (**83%** accuracy, 0% over-routing).
 - **Pluggable routing brain.** Deterministic heuristic, a cheap-LLM classifier, or a
   RouteLLM sidecar — all behind one `SignalProvider` interface; degrades gracefully.
 - **Header-based control surface** that never touches the request body.
@@ -95,7 +95,7 @@ For local dev, set `AUTH_ENABLED=false` and drop the header.
 curl http://localhost:8000/v1/chat/completions \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "X-Router-Strategy: value" \
+  -H "X-Router-Strategy: cheapest-capable" \
   -d '{"model":"auto","messages":[{"role":"user","content":"hello"}]}' -i
 ```
 
@@ -143,9 +143,10 @@ inside a drop-in OpenAI-compatible proxy — not just load-balancing or single-a
 tiering. Every request is reduced to hard capability constraints (vision, tools, JSON, audio,
 token count) plus predictive signals (complexity, reasoning depth, task type, data
 sensitivity), and each eligible model is scored and ranked under a "frontier-then-optimize"
-brain: capability is scored first, the top cluster is taken, then one objective — `best`,
-`value`, or `fast` — is optimized within it, so price and latency never drag down a genuinely
-stronger model. The whole decision is controlled by `X-Router-*` headers that never touch the
+brain: capability is scored first, the top cluster is taken, then one objective — capability
+(`best`), cost, or latency — is optimized within it (`cheapest-capable` / `fastest-capable`) or
+across all eligible models (`cheapest` / `fastest`), so price and latency never drag down a
+genuinely stronger model unless you explicitly ask them to. The whole decision is controlled by `X-Router-*` headers that never touch the
 OpenAI payload, is fully inspectable via a `/router/explain` trace, and — unlike routers that
 assert their quality — is measured against gold cases and LLM-judged ground truth by a
 built-in eval harness. And because the routing brain sits behind a pluggable `SignalProvider`
@@ -296,13 +297,17 @@ Selection runs in three stages, and only the last one is weighted:
    strategy optimises **one** objective *within* the frontier — so price and speed never drag
    down a genuinely-stronger model. `X-Router-Reason` reports which and why.
 
-A **strategy chooses the objective within the frontier** (`config/strategies.yaml`):
+A **strategy is an objective × a capability gate** ([ADR 0021](docs/decisions/0021-strategy-taxonomy.md), `config/strategies.yaml`). The `-capable` variants optimise *within* the capability frontier; the bare `cheapest`/`fastest` optimise over **all** eligible models (no capability gate):
 
-| Strategy | Optimises within the frontier | Intent |
-| --- | --- | --- |
-| `best` | cheapest within the *tie-band* of the top `Q` | the strongest, without overpaying for noise |
-| `value` *(default)* | min blended cost | strongest that's also economical |
-| `fast` | min latency | soonest among the genuinely-capable |
+| Strategy | Optimises | Gate | Intent |
+| --- | --- | --- | --- |
+| `best` | capability | — | the strongest model, without overpaying for tie-band noise |
+| `cheapest-capable` *(default)* | min cost | capability frontier | strongest that's also economical *(was `value`)* |
+| `cheapest` | min cost | **none** | the absolute cheapest eligible model, capability be damned |
+| `fastest-capable` | min latency | capability frontier | soonest among the genuinely-capable *(was `fast`)* |
+| `fastest` | min latency | **none** | the absolute lowest-latency eligible model |
+
+The deprecated aliases `value` → `cheapest-capable` and `fast` → `fastest-capable` are still accepted (with a deprecation warning) so the `X-Router-Strategy` contract never breaks.
 
 `best` isn't a hard argmax: models within `tie_epsilon` (≈5%) of the top `Q` are treated as
 statistically tied (that gap is benchmark noise), so it takes the **cheapest** of them — a
@@ -367,7 +372,7 @@ that turns "is it any good?" into numbers — two ways, each honest about what i
 
 | Method | What it proves | Result |
 | --- | --- | --- |
-| **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error; easy vs. hard math/coding → cheap tier vs. reasoning model; a non-default temperature avoids fixed-temperature models) | **21/21** |
+| **Provable gold cases** (`test/gold.test.ts`) | Requests whose correct target is *objectively determinable* (vision → vision model; pure-`cost` → cheapest; bypass → verbatim; audio → error; easy vs. hard math/coding → cheap tier vs. reasoning model; a non-default temperature avoids fixed-temperature models) | **23/23** |
 | **Quality-judged accuracy** (`npm run eval:judge`) | For each prompt, a weak and a strong model both answer, an LLM judge decides whether the strong answer was *meaningfully* better, and the router's choice is scored against that ground truth | **83% accuracy · 0% over-routing · 17% under-routing** (value, 12-prompt set) |
 
 Two honest limits on that judged number. It is **n=12**, so a single prompt moves it by 8
@@ -443,7 +448,7 @@ provider default.
 ## Tests
 
 ```bash
-npm test          # vitest — 190 tests incl. gold routing + judging logic (hermetic)
+npm test          # vitest — 197 tests incl. gold routing + judging logic (hermetic)
 npm run typecheck # tsc --noEmit
 npm run eval      # dry-run routing eval (strategies vs. baselines)
 npm run eval:judge# quality-judged accuracy (spends — real model calls)
@@ -509,6 +514,7 @@ implementation is open.
 | [0018](docs/decisions/0018-base-model-delta-kpis.md) | Base-model delta report — cost & targeted-accuracy KPIs (`eval:baseline`) | ✅ Accepted |
 | [0019](docs/decisions/0019-continuous-capability-and-difficulty-scaled-competency.md) | Continuous capability index (`quality`) + difficulty-scaled competency | ✅ Accepted |
 | [0020](docs/decisions/0020-generation-parameter-compatibility.md) | Generation-parameter compatibility as a routing constraint (`temperature`) | ✅ Accepted |
+| [0021](docs/decisions/0021-strategy-taxonomy.md) | Strategy taxonomy — objective × capability-gate (`best` / `cheapest[-capable]` / `fastest[-capable]`) | ✅ Accepted |
 
 ---
 

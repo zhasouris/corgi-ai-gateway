@@ -73,6 +73,12 @@ export class Router {
     return Boolean(this.config.resolveApiKey(model.provider, model.id));
   }
 
+  /** Frontier width for a strategy: its override (1.0 = no capability gate, for
+   *  `cheapest`/`fastest`) or the shared default (ADR 0021). */
+  private frontierDeltaFor(strategy: Strategy): number {
+    return this.config.routing.frontierDeltaByStrategy[strategy] ?? this.config.routing.frontierDelta;
+  }
+
   /**
    * Pick the best model we can actually reach.
    *
@@ -179,7 +185,7 @@ export class Router {
         candidates, ALL_RULES, analysis.features, this.config.routing.capabilityWeights,
       );
       const ranked = selectByObjective(
-        scored, objective, this.config.routing.frontierDelta, this.config.routing.tieEpsilon,
+        scored, objective, this.frontierDeltaFor(req.options.strategy), this.config.routing.tieEpsilon,
       );
       const picked = this.pickRoutable(ranked, req.options.strategy, objective);
       const top = picked.top;
@@ -295,9 +301,11 @@ export class Router {
     const scoredRaw = scoreModels(
       eligibleModels, ALL_RULES, analysis.features, this.config.routing.capabilityWeights,
     );
+    // The displayed capability frontier stays the global one, so an ungated pick
+    // (cheapest/fastest) is visibly OUTSIDE it rather than redefining "frontier".
     const inFrontier = frontierIds(scoredRaw, this.config.routing.frontierDelta);
     const scored = selectByObjective(
-      scoredRaw, objective, this.config.routing.frontierDelta, this.config.routing.tieEpsilon,
+      scoredRaw, objective, this.frontierDeltaFor(req.options.strategy), this.config.routing.tieEpsilon,
     );
     const outTokens = analysis.classifier.expectedOutputTokens;
     // Trace the number that drove the task_type rule: the model's provenanced

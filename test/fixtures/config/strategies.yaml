@@ -22,8 +22,16 @@ frontier_delta: 0.12
 # meaningless edge. It only pays up when a model is >tie_epsilon better.
 tie_epsilon: 0.05
 
-# Each strategy → the objective it optimizes within the frontier.
+# Each strategy → its objective (ADR 0021: objective × capability-gate).
 strategies:
-  best: capability # the frontier top — strongest model, price-blind
-  value: cost # cheapest model in the frontier
-  fast: latency # fastest model in the frontier
+  best: capability
+  cheapest-capable: cost
+  cheapest: cost
+  fastest-capable: latency
+  fastest: latency
+  value: cost # deprecated alias = cheapest-capable
+  fast: latency # deprecated alias = fastest-capable
+
+strategy_frontier_delta:
+  cheapest: 1.0
+  fastest: 1.0
