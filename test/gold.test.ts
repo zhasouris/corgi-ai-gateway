@@ -28,7 +28,17 @@ interface GoldCase {
   strategy?: Strategy;
   bypass?: boolean;
   request: ChatCompletionRequest;
-  expect: { model?: string; oneOf?: string[]; capability?: Capability; error?: boolean };
+  // Positive expectations (model/oneOf/capability/error) and negative ones
+  // (notModel/notOneOf) — "must route AWAY from this model", e.g. an incompatible
+  // sampling parameter must never land on the model that rejects it.
+  expect: {
+    model?: string;
+    oneOf?: string[];
+    capability?: Capability;
+    error?: boolean;
+    notModel?: string;
+    notOneOf?: string[];
+  };
   note?: string;
 }
 
@@ -77,6 +87,9 @@ describe("gold routing", () => {
         const model = byId.get(decision.modelId)!;
         expect(supports(model, gc.expect.capability)).toBe(true);
       }
+      // Negative: the router must have routed AWAY from these model(s).
+      if (gc.expect.notModel) expect(decision.modelId).not.toBe(gc.expect.notModel);
+      if (gc.expect.notOneOf) expect(gc.expect.notOneOf).not.toContain(decision.modelId);
     });
   }
 });
