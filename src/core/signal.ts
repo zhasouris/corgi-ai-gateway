@@ -140,11 +140,21 @@ export class LlmClassifierProvider implements SignalProvider {
       }
       return result;
     } catch (err) {
-      logWarn("classifier failed, degrading to defaults", {
+      logWarn("classifier failed, degrading to heuristic", {
         provider: cfg.provider,
         model: cfg.model,
         error: (err as Error).message,
       });
+      // The classifier timed out or errored (its call is bounded at
+      // timeout_seconds). The static default is `task_type=conversation`, which
+      // is the WORST read for a hard prompt: it flattens the capability score so
+      // `best` drops to a cheap general model (a rigorous proof routing to an 8B
+      // "instant" model). Fall back to the deterministic heuristic instead — a
+      // real per-prompt signal, marked degraded — exactly as RouteLLMProvider
+      // falls back to it when the sidecar is unreachable.
+      if (cfg.heuristic_floor) {
+        return { ...(await this.heuristic.analyze(req)), degraded: true };
+      }
       return defaultClassifierResult(true);
     }
   }
