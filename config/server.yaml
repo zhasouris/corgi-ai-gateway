@@ -31,6 +31,15 @@ classifier:
   # Prompt text is truncated to this many characters before being sent to the
   # classifier, to bound its cost/latency.
   max_input_chars: 8000
+  # Floor the LLM classifier's reading with the offline heuristic. gpt-4.1-nano
+  # is non-deterministic even at temperature 0 and occasionally collapses a hard
+  # prompt to task_type=conversation / reasoning_depth=0, which flattens the
+  # capability score and lets `best` fall to a cheap general model (a rigorous
+  # proof routing to an 8B "instant" model). When the classifier drops to the
+  # trivial `conversation` bucket but the deterministic heuristic sees real work,
+  # trust the heuristic. Fires ONLY on that collapse, so normal classifications
+  # pass through untouched.
+  heuristic_floor: true
 
 # The /demo decision-inspector page and /v1/router/explain endpoint. The demo
 # needs the classifier key (CLASSIFIER_API_KEY) to show real signals. Turn off

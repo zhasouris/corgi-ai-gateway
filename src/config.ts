@@ -51,6 +51,9 @@ const serverSchema = z.object({
       model: z.string().default("gpt-4.1-nano"),
       timeout_seconds: z.number().default(8),
       max_input_chars: z.number().int().default(8000),
+      // Floor the classifier reading with the deterministic heuristic when it
+      // collapses a substantive prompt to task_type=conversation (see server.yaml).
+      heuristic_floor: z.boolean().default(true),
     })
     .default({}),
   providers: z.record(providerSchema),

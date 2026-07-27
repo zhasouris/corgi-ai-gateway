@@ -64,9 +64,43 @@ function parseClassifier(raw: string): ClassifierResult {
   };
 }
 
+/**
+ * Floor an LLM-classifier reading with the deterministic heuristic.
+ *
+ * gpt-4.1-nano is non-deterministic even at temperature 0 and occasionally
+ * collapses a substantive prompt to `task_type=conversation` /
+ * `reasoning_depth=0`. That flattens the capability score `Q`, so `best` (which
+ * takes the cheapest of the statistically-top band) falls to a cheap general
+ * model — a rigorous proof wrongly routing to an 8B "instant" model.
+ *
+ * The heuristic keys on "prove/derive/theorem/proof" and reliably reads this as
+ * math/reasoning. So when the classifier drops to the trivial `conversation`
+ * bucket but the heuristic sees real work, adopt the heuristic's task_type and
+ * floor the difficulty fields to it. Fires ONLY on that collapse: a genuine
+ * conversation (heuristic agrees) and every non-collapsed classification pass
+ * through untouched, so this never inflates difficulty globally.
+ */
+export function floorSignal(
+  cls: ClassifierResult,
+  heuristic: ClassifierResult,
+): ClassifierResult {
+  if (cls.taskType !== "conversation" || heuristic.taskType === "conversation") {
+    return cls;
+  }
+  return {
+    ...cls,
+    complexity: Math.max(cls.complexity, heuristic.complexity),
+    reasoningDepth: Math.max(cls.reasoningDepth, heuristic.reasoningDepth),
+    taskType: heuristic.taskType,
+  };
+}
+
 export class LlmClassifierProvider implements SignalProvider {
   readonly name = "llm-classifier";
-  constructor(private readonly config: AppConfig) {}
+  private readonly heuristic: HeuristicSignalProvider;
+  constructor(private readonly config: AppConfig) {
+    this.heuristic = new HeuristicSignalProvider(config.server.classifier.max_input_chars);
+  }
 
   async analyze(req: RoutingRequest): Promise<ClassifierResult> {
     const cfg = this.config.server.classifier;
@@ -99,6 +133,11 @@ export class LlmClassifierProvider implements SignalProvider {
       const result = parseClassifier(resp.choices[0]?.message?.content ?? "{}");
       // Attribute what this call actually cost + how long it took to the decision.
       result.signalCost = this.priceCall(resp.usage, Date.now() - startedAt);
+      // Guard the pathological collapse to `conversation` (see floorSignal). Only
+      // run the heuristic in that case — it's the only reading the floor can move.
+      if (cfg.heuristic_floor && result.taskType === "conversation") {
+        return floorSignal(result, await this.heuristic.analyze(req));
+      }
       return result;
     } catch (err) {
       logWarn("classifier failed, degrading to defaults", {
