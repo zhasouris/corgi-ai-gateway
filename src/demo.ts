@@ -40,7 +40,7 @@ export function loadPresets(): Preset[] {
         return {
           id: g.id as string,
           label: (g.note as string) || (g.id as string),
-          strategy: (g.strategy as string) || "value",
+          strategy: (g.strategy as string) || "cheapest-capable",
           prompt,
           bypass: Boolean(g.bypass),
           body: g.request,
@@ -545,7 +545,7 @@ export function demoHtml(
     var tv = document.getElementById('temperature').value;
     if (tv !== '') body.temperature = Number(tv);
     btn.disabled = true; cmpBtn.disabled = true;
-    out.innerHTML = '<div class="card muted">Comparing best / value / fast…</div>';
+    out.innerHTML = '<div class="card muted">Comparing best / cheapest-capable / cheapest / fastest-capable / fastest…</div>';
     try {
       var results = await Promise.all(['best', 'cheapest-capable', 'cheapest', 'fastest-capable', 'fastest'].map(function (s) {
         return fetch('/v1/router/explain', {
@@ -568,8 +568,8 @@ export function demoHtml(
     var picks = results.map(function (r) { return r.data.decision ? r.data.decision.model : null; });
     var agree = picks.every(function (m) { return m && m === picks[0]; });
     var note = agree
-      ? 'All three strategies agree on <b>' + esc(picks[0]) + '</b> — for this prompt, capability, cost and latency point the same way.'
-      : 'The strategies <b>diverge</b>: same prompt, different picks. That is the point — <code>best</code> reserves capability, <code>value</code> takes the cheapest and <code>fast</code> the quickest, each <em>within</em> the capability frontier.';
+      ? 'All strategies agree on <b>' + esc(picks[0]) + '</b> — for this prompt, capability, cost and latency point the same way.'
+      : 'The strategies <b>diverge</b>: same prompt, different picks. That is the point — <code>best</code> reserves capability, <code>cheapest-capable</code> takes the cheapest and <code>fastest-capable</code> the quickest <em>within</em> the capability frontier, while <code>cheapest</code>/<code>fastest</code> drop the gate entirely.';
     var OPT = { best: 'strongest', 'cheapest-capable': 'cheapest capable', cheapest: 'cheapest overall', 'fastest-capable': 'fastest capable', fastest: 'fastest overall' };
     var cols = results.map(function (r) {
       var dec = r.data.decision;
