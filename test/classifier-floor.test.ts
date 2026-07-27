@@ -10,14 +10,26 @@
  * as the real catalog grows.
  */
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Make the classifier's OpenAI call fail, to exercise the degraded/timeout path.
+vi.mock("openai", () => ({
+  default: class {
+    chat = { completions: { create: () => Promise.reject(new Error("classifier timeout")) } };
+  },
+}));
 
 process.env.ROUTER_CONFIG_DIR = join(process.cwd(), "test", "fixtures", "gold");
 
 import { getConfig, resetConfigCache } from "../src/config.js";
 import { makeAnalyze } from "../src/core/analysis.js";
 import { Router } from "../src/core/router.js";
-import { HeuristicSignalProvider, floorSignal, type SignalProvider } from "../src/core/signal.js";
+import {
+  HeuristicSignalProvider,
+  LlmClassifierProvider,
+  floorSignal,
+  type SignalProvider,
+} from "../src/core/signal.js";
 import type { ClassifierResult, RoutingRequest } from "../src/types.js";
 
 const SQRT2 =
@@ -85,6 +97,28 @@ describe("classifier heuristic floor", () => {
       degraded: false,
     };
     expect(floorSignal(trivial, { ...trivial })).toEqual(trivial);
+  });
+
+  it("on classifier timeout, degrades to the heuristic — not the conversation default", async () => {
+    // The live failure mode: the classifier call times out / errors and the
+    // static default (task_type=conversation, reasoning_depth=0) drops `best` to
+    // a cheap model. The degraded path must instead use the deterministic
+    // heuristic, which reads this proof as math with real difficulty.
+    // (The gold fixture disables the classifier, so enable it for this provider.)
+    resetConfigCache();
+    const base = getConfig();
+    const config = {
+      ...base,
+      server: {
+        ...base.server,
+        classifier: { ...base.server.classifier, enabled: true, heuristic_floor: true },
+      },
+    };
+    const provider = new LlmClassifierProvider(config);
+    const res = await provider.analyze(request(SQRT2));
+    expect(res.degraded).toBe(true);
+    expect(res.taskType).toBe("math");
+    expect(res.reasoningDepth).toBeGreaterThan(0);
   });
 
   it("under `best`, a floored collapse routes the sqrt-2 proof like the correct reading", async () => {
