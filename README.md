@@ -44,6 +44,12 @@ flowchart LR
     prov -.->|"streamed back"| app
 ```
 
+The same journey, step by step — one proxied `POST /v1/chat/completions` from
+authentication through routing to the forwarded response (each stage maps to
+[`src/app.ts`](src/app.ts)):
+
+![Lifecycle of a proxied request: Client → corgi-ai-gateway → Provider, showing auth, routing, model rewrite, forward, and the response headers a client reads back](assets/request-lifecycle.gif)
+
 > **About this project.** A self-hosted, production-shaped exploration of per-request LLM
 > routing — built to be *read* as much as run. The design decisions are documented as ADRs,
 > the routing quality is measured (not asserted), and the architecture is deliberately
