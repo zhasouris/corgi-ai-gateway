@@ -33,7 +33,7 @@
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "dotenv": "^16.4.0",
     "gpt-tokenizer": "^3.4.0",
-    "hono": "^4.6.0",
+    "hono": "^4.12.32",
     "jose": "^6.2.4",
     "openai": "^6.48.0",
     "yaml": "^2.6.0",
